@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 
 export const LayoutShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-[#faf9f6] flex flex-col">
+    <div className="min-h-screen flex flex-col transition-colors duration-200">
       <Navbar />
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         <Sidebar />

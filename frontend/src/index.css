@@ -1,73 +1,203 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
-    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
-  
+
   body {
     font-family: var(--font-sans);
-    background-color: #f2f9f4;
-    /* Elegant Marble Vein SVG & Soft Pastel Swirl Background */
+    background-color: #f0f4f8;
+    color: #0f172a;
     background-image: 
-      radial-gradient(at 10% 10%, rgba(220, 252, 231, 0.6) 0px, transparent 50%),
-      radial-gradient(at 90% 10%, rgba(209, 250, 229, 0.5) 0px, transparent 50%),
-      radial-gradient(at 50% 50%, rgba(236, 253, 245, 0.8) 0px, transparent 70%),
-      radial-gradient(at 20% 80%, rgba(167, 243, 208, 0.35) 0px, transparent 50%),
-      radial-gradient(at 80% 90%, rgba(204, 251, 241, 0.4) 0px, transparent 50%),
-      url("data:image/svg+xml,%3Csvg width='600' height='600' viewBox='0 0 600 600' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23059669' stroke-width='0.4' stroke-opacity='0.08'%3E%3Cpath d='M0,150 Q120,80 240,190 T480,120 T600,220'/%3E%3Cpath d='M0,320 Q180,240 300,360 T600,280'/%3E%3Cpath d='M60,0 Q180,200 120,400 T200,600'/%3E%3Cpath d='M420,0 Q360,180 480,380 T400,600' stroke-width='0.6' stroke-opacity='0.12'/%3E%3C/g%3E%3C/svg%3E");
+      radial-gradient(at 0% 0%, rgba(219, 234, 254, 0.8) 0px, transparent 40%),
+      radial-gradient(at 100% 0%, rgba(186, 230, 253, 0.6) 0px, transparent 45%),
+      radial-gradient(at 50% 100%, rgba(240, 249, 255, 0.9) 0px, transparent 50%);
     background-attachment: fixed;
-    color: #064e3b;
-    overflow-x: hidden;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark body {
+    background-color: #060b14;
+    color: #f8fafc;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(15, 23, 42, 0.95) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(3, 105, 161, 0.3) 0px, transparent 45%),
+      radial-gradient(at 50% 100%, rgba(30, 58, 138, 0.3) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  /* High-Contrast Typography Guarantee */
+  h1, h2, h3, h4, h5, h6 {
+    color: #0f172a;
+    font-weight: 700;
+  }
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: #ffffff;
+  }
+
+  p, label {
+    color: #1e293b;
+  }
+  .dark p, .dark label {
+    color: #f1f5f9;
+  }
+
+  /* Form Elements */
+  input, select, textarea {
+    color: #0f172a;
+    background-color: #ffffff;
+    border-color: #cbd5e1;
+  }
+  .dark input, .dark select, .dark textarea {
+    color: #ffffff;
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+
+  /* Ensure placeholders are visible */
+  input::placeholder, textarea::placeholder {
+    color: #64748b;
+    opacity: 1;
+  }
+  .dark input::placeholder, .dark textarea::placeholder {
+    color: #94a3b8;
+    opacity: 1;
+  }
+
+  /* Global Legibility & Contrast Elevators */
+  .text-slate-600 {
+    color: #334155 !important;
+  }
+  .text-slate-500 {
+    color: #475569 !important;
+  }
+  .text-slate-400 {
+    color: #475569 !important;
+  }
+  .dark .text-slate-400,
+  .dark .text-slate-500,
+  .dark .text-slate-600 {
+    color: #e2e8f0 !important;
+  }
+
+  /* Prevent unreadably small font sizes */
+  .text-xs {
+    font-size: 0.8125rem !important; /* 13px */
+    line-height: 1.35rem !important;
+  }
+  .text-\[10px\], .text-\[11px\] {
+    font-size: 0.75rem !important; /* 12px minimum */
+    line-height: 1.25rem !important;
   }
 }
 
-/* Luxury Marble Card & Glassmorphism Utilities */
-.glass-card {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(209, 250, 229, 0.8);
+/* Modern Azure Glassmorphism & Card Utilities */
+.azure-card {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
   box-shadow: 
-    0 10px 30px -10px rgba(6, 78, 59, 0.05),
-    0 4px 12px -2px rgba(6, 78, 59, 0.02),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+    0 4px 20px -4px rgba(2, 132, 199, 0.08),
+    0 2px 6px -1px rgba(15, 23, 42, 0.05);
+  color: #0f172a;
 }
 
-.glass-card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-card-hover:hover {
-  transform: translateY(-3px);
+.dark .azure-card {
+  background-color: #0f172a;
+  border: 1px solid rgba(56, 189, 248, 0.3);
   box-shadow: 
-    0 20px 35px -12px rgba(5, 150, 105, 0.15),
-    0 8px 20px -4px rgba(6, 78, 59, 0.06);
-  border-color: rgba(167, 243, 208, 0.9);
+    0 10px 30px -10px rgba(0, 0, 0, 0.7),
+    0 2px 8px -2px rgba(14, 165, 233, 0.2);
+  color: #f8fafc;
 }
 
-.marble-texture {
-  background-image: 
-    linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.3) 100%),
-    url("data:image/svg+xml,%3Csvg width='400' height='400' viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,100 Q150,40 250,150 T400,80 M50,0 Q180,180 80,350' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-opacity='0.15'/%3E%3C/svg%3E");
+.azure-card-hover {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glow-soft-emerald {
-  box-shadow: 0 0 40px -10px rgba(16, 185, 129, 0.25);
+.azure-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 14px 28px -8px rgba(2, 132, 199, 0.16),
+    0 4px 10px -2px rgba(15, 23, 42, 0.08);
+  border-color: #38bdf8;
 }
 
-/* Custom Emerald Scrollbars */
+.dark .azure-card-hover:hover {
+  border-color: rgba(56, 189, 248, 0.7);
+  box-shadow: 
+    0 16px 32px -8px rgba(14, 165, 233, 0.35),
+    0 4px 12px -2px rgba(0, 0, 0, 0.8);
+}
+
+/* Primary Rich Blue Action Button */
+.btn-primary {
+  background-image: linear-gradient(to right, #2563eb, #0284c7);
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-image: linear-gradient(to right, #1d4ed8, #0369a1);
+  box-shadow: 0 6px 16px -2px rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Secondary Icy Azure Button */
+.btn-secondary {
+  background-color: #e0f2fe;
+  color: #0369a1 !important;
+  border: 1px solid #7dd3fc;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #bae6fd;
+  color: #0c4a6e !important;
+  border-color: #38bdf8;
+}
+
+.dark .btn-secondary {
+  background-color: rgba(14, 165, 233, 0.18);
+  color: #bae6fd !important;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.dark .btn-secondary:hover {
+  background-color: rgba(14, 165, 233, 0.3);
+  color: #ffffff !important;
+  border-color: rgba(56, 189, 248, 0.7);
+}
+
+/* Custom Icy Azure Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #a7f3d0;
+  background: #bae6fd;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #059669;
+  background: #38bdf8;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #1e3a8a;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
 }

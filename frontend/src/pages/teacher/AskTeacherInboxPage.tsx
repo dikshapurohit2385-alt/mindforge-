@@ -7,7 +7,8 @@ import {
   CheckCircle2, 
   Send, 
   User, 
-  X
+  X,
+  Edit3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -66,23 +67,24 @@ export const AskTeacherInboxPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 transition-colors duration-200">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-emerald-950 tracking-tight">Student Doubts & Questions</h1>
-          <p className="text-xs font-medium text-emerald-800/80 mt-1">
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Student Doubts & Questions</h1>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mt-1">
             Review and answer questions submitted by your students
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-b border-emerald-200/80 pb-1">
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-sky-200/80 dark:border-sky-900/60 pb-1">
         <button
           onClick={() => setActiveTab('PENDING')}
           className={`px-4 py-2 text-xs font-bold transition-all border-b-2 cursor-pointer ${
             activeTab === 'PENDING'
-              ? 'border-amber-600 text-amber-800 font-extrabold'
-              : 'border-transparent text-emerald-700/80 hover:text-emerald-950'
+              ? 'border-amber-500 text-amber-600 dark:text-amber-400 font-extrabold'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           Pending Review ({questions.filter(q => q.status === 'PENDING').length})
@@ -91,8 +93,8 @@ export const AskTeacherInboxPage: React.FC = () => {
           onClick={() => setActiveTab('ANSWERED')}
           className={`px-4 py-2 text-xs font-bold transition-all border-b-2 cursor-pointer ${
             activeTab === 'ANSWERED'
-              ? 'border-emerald-700 text-emerald-800 font-extrabold'
-              : 'border-transparent text-emerald-700/80 hover:text-emerald-950'
+              ? 'border-blue-600 text-blue-600 dark:text-sky-400 font-extrabold'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           Answered ({questions.filter(q => q.status !== 'PENDING').length})
@@ -101,60 +103,60 @@ export const AskTeacherInboxPage: React.FC = () => {
           onClick={() => setActiveTab('ALL')}
           className={`px-4 py-2 text-xs font-bold transition-all border-b-2 cursor-pointer ${
             activeTab === 'ALL'
-              ? 'border-emerald-800 text-emerald-900 font-extrabold'
-              : 'border-transparent text-emerald-700/80 hover:text-emerald-950'
+              ? 'border-blue-600 text-blue-600 dark:text-sky-400 font-extrabold'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          All Inbox ({questions.length})
+          All Questions ({questions.length})
         </button>
       </div>
 
       {loading ? (
-        <div className="glass-card rounded-3xl p-12 text-center text-xs font-semibold text-emerald-700/80">
-          Loading student inbox...
+        <div className="azure-card rounded-2xl p-12 text-center text-sm font-semibold text-slate-600 dark:text-slate-400">
+          Loading student questions...
         </div>
       ) : filteredQuestions.length === 0 ? (
-        <div className="glass-card rounded-3xl p-12 text-center space-y-3">
-          <MessageSquare className="w-10 h-10 text-emerald-300 mx-auto" />
-          <h3 className="text-sm font-bold text-emerald-950">Inbox empty</h3>
-          <p className="text-xs font-medium text-emerald-700/80 max-w-sm mx-auto">
-            {activeTab === 'PENDING'
-              ? "All student questions have been answered!"
-              : "No student questions found in this tab."}
+        <div className="azure-card rounded-2xl p-12 text-center space-y-3">
+          <MessageSquare className="w-10 h-10 text-sky-300 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">No questions in this view</h3>
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-400 max-w-sm mx-auto">
+            {activeTab === 'PENDING' 
+              ? "Great job! All student questions have been answered."
+              : "No questions match your current tab selection."}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           {filteredQuestions.map((q) => (
-            <motion.div
+            <div 
               key={q.id}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card rounded-3xl p-6 border border-emerald-200/80 bg-white space-y-4 shadow-xs"
+              className="azure-card rounded-2xl p-6 border border-sky-200/90 dark:border-sky-900/60 space-y-4 shadow-xs"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    {q.subject_name}
-                  </span>
-                  <span className="text-[10px] text-emerald-900 font-bold flex items-center gap-1">
-                    <User className="w-3 h-3 text-emerald-700" />
-                    Student: {q.student_name || 'Anonymous Student'}
-                  </span>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-950 text-blue-600 dark:text-sky-400 font-bold text-xs flex items-center justify-center border border-sky-200 dark:border-sky-800">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{q.student_name}</h3>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {q.subject_name} {q.chapter_title ? `• ${q.chapter_title}` : ''} {q.module_title ? `• ${q.module_title}` : ''}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-emerald-600 font-medium">
-                    Received {new Date(q.created_at).toLocaleDateString()}
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    {new Date(q.created_at).toLocaleDateString()}
                   </span>
                   {q.status === 'PENDING' ? (
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      Pending Reply
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      Pending Answer
                     </span>
                   ) : (
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-sky-800 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 px-2.5 py-0.5 rounded-md border border-sky-200 dark:border-sky-800 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                       Answered
                     </span>
                   )}
@@ -162,101 +164,117 @@ export const AskTeacherInboxPage: React.FC = () => {
               </div>
 
               {q.selected_text && (
-                <div className="p-3 bg-emerald-50/60 border-l-4 border-emerald-600 rounded-r-xl text-xs font-mono text-emerald-950">
-                  <span className="text-[10px] text-emerald-800 font-bold block uppercase tracking-wider mb-0.5">Context Snippet:</span>
+                <div className="p-3 bg-sky-50 dark:bg-slate-800/80 border-l-4 border-blue-600 rounded-r-xl text-xs font-mono text-slate-800 dark:text-slate-200">
+                  <span className="text-[10px] text-sky-700 dark:text-sky-400 font-bold block uppercase tracking-wider mb-0.5">Reference Snippet:</span>
                   "{q.selected_text}"
                 </div>
               )}
 
               <div>
-                <span className="text-[11px] font-bold text-emerald-700/80 block mb-1">Student Question:</span>
-                <p className="text-xs font-bold text-emerald-950 leading-relaxed">{q.question}</p>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Student Question:</span>
+                <p className="text-sm font-bold text-slate-900 dark:text-white leading-relaxed">{q.question}</p>
               </div>
 
               {q.answer ? (
-                <div className="p-4 rounded-2xl bg-emerald-100/90 border border-emerald-200 space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-extrabold text-emerald-950">Your Official Answer:</span>
+                <div className="bg-sky-50/70 dark:bg-slate-800/60 rounded-xl p-4 border border-sky-100 dark:border-slate-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-sky-800 dark:text-sky-300 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                      Your Official Answer:
+                    </span>
                     <button
                       onClick={() => openAnswerModal(q)}
-                      className="text-emerald-900 font-extrabold hover:underline"
+                      className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      Edit Answer
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit Answer</span>
                     </button>
                   </div>
-                  <p className="text-xs font-medium text-emerald-950 leading-relaxed whitespace-pre-wrap">{q.answer}</p>
+                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
+                    {q.answer}
+                  </p>
                 </div>
               ) : (
-                <div className="pt-2 flex justify-end">
+                <div className="pt-2">
                   <button
                     onClick={() => openAnswerModal(q)}
-                    className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-4 py-2 btn-primary rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Answer Student Question</span>
+                    <span>Answer This Question</span>
                   </button>
                 </div>
               )}
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
 
+      {/* Answer Modal */}
       <AnimatePresence>
         {selectedQuestion && (
-          <div className="fixed inset-0 z-50 bg-emerald-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-card bg-white rounded-3xl p-7 max-w-xl w-full border border-emerald-200 shadow-2xl space-y-5"
+              className="azure-card bg-white dark:bg-slate-900 rounded-2xl p-7 max-w-xl w-full border border-sky-200 dark:border-sky-800 shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-emerald-100 pb-4">
-                <div>
-                  <h2 className="text-lg font-bold text-emerald-950">Answer Student Question</h2>
-                  <p className="text-xs text-emerald-800 font-semibold">Student: {selectedQuestion.student_name}</p>
+              <div className="flex items-center justify-between border-b border-sky-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-blue-600 dark:text-sky-400" />
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                    Answer Question from {selectedQuestion.student_name}
+                  </h2>
                 </div>
                 <button
                   onClick={() => setSelectedQuestion(null)}
-                  className="p-1 text-emerald-600 hover:text-emerald-900 rounded-full hover:bg-emerald-50"
+                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-full hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-3 bg-emerald-50/50 rounded-2xl border border-emerald-200/80 text-xs font-semibold text-emerald-950">
-                <span className="text-[10px] text-emerald-700/80 block font-bold mb-0.5">Question:</span>
-                "{selectedQuestion.question}"
+              <div className="p-3 bg-sky-50/60 dark:bg-slate-800/60 rounded-xl border border-sky-100 dark:border-slate-700 space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Question:</span>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">{selectedQuestion.question}</p>
+                {selectedQuestion.selected_text && (
+                  <p className="text-xs font-mono text-sky-700 dark:text-sky-300 mt-1 italic">
+                    Ref: "{selectedQuestion.selected_text}"
+                  </p>
+                )}
               </div>
 
               <form onSubmit={handleSendAnswer} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-emerald-950 mb-1">Your Detailed Explanation *</label>
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    Your Official Answer / Clarification *
+                  </label>
                   <textarea
                     required
-                    rows={6}
+                    rows={5}
                     value={answerText}
                     onChange={(e) => setAnswerText(e.target.value)}
-                    placeholder="Provide a clear, pedagogical answer for the student..."
-                    className="w-full px-4 py-3 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                    placeholder="Provide a clear, pedagogical explanation to resolve the student's doubt..."
+                    className="w-full p-3.5 bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500 leading-relaxed"
                   ></textarea>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-3 border-t border-emerald-100">
+                <div className="flex justify-end gap-3 pt-2 border-t border-sky-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setSelectedQuestion(null)}
-                    className="px-4 py-2 bg-emerald-100/70 hover:bg-emerald-200/70 text-emerald-900 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    className="px-4 py-2 btn-secondary rounded-xl text-xs font-bold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-5 py-2 btn-primary rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>{submitting ? 'Submitting...' : 'Send Answer'}</span>
+                    <span>{submitting ? 'Submitting...' : 'Submit Official Answer'}</span>
                   </button>
                 </div>
               </form>

@@ -1,5 +1,6 @@
 from app.models.user import User, Student, Teacher, Institution, UserRole
 from app.models.academic import Subject, Chapter, Module, StudentNote, AskTeacherQuestion, QuestionStatus
+from app.models.document import Document, ExtractedContent, DocumentStatus, ExtractionMethod
 
 __all__ = [
     "User",
@@ -12,5 +13,9 @@ __all__ = [
     "Module",
     "StudentNote",
     "AskTeacherQuestion",
-    "QuestionStatus"
+    "QuestionStatus",
+    "Document",
+    "ExtractedContent",
+    "DocumentStatus",
+    "ExtractionMethod",
 ]
