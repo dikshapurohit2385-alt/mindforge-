@@ -162,44 +162,44 @@ export const DigitalNotebookPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 transition-colors duration-200">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-emerald-950 tracking-tight">Digital Notebook</h1>
-          <p className="text-xs font-medium text-emerald-800/80 mt-1">
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Digital Notebook</h1>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mt-1">
             Organize personal study notes by Subject, Chapter, and Module
           </p>
         </div>
 
         <button
           onClick={openNewNoteModal}
-          className="px-5 py-2.5 bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 hover:from-emerald-900 hover:to-teal-900 text-white rounded-2xl text-xs font-bold shadow-md shadow-emerald-950/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          className="px-5 py-2.5 btn-primary rounded-xl text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create New Note</span>
         </button>
       </div>
 
-      <div className="glass-card rounded-2xl p-4 border border-emerald-200/70 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div className="azure-card rounded-2xl p-4 border border-sky-200/90 dark:border-sky-900/60 flex flex-col md:flex-row gap-4 justify-between items-center">
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-emerald-600/60 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-sky-600 dark:text-sky-400 absolute left-3.5 top-3.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search note titles or content..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white/90 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-950 placeholder-emerald-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-800 rounded-xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500 transition-all"
           />
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          <Filter className="w-3.5 h-3.5 text-emerald-600/70 shrink-0" />
+          <Filter className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
           <button
             onClick={() => setSelectedSubjectFilter('ALL')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
               selectedSubjectFilter === 'ALL'
-                ? 'bg-emerald-800 text-white shadow-xs'
-                : 'bg-white text-emerald-900 hover:bg-emerald-100/60'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-700 border border-sky-200 dark:border-slate-700'
             }`}
           >
             All Notes ({notes.length})
@@ -208,10 +208,10 @@ export const DigitalNotebookPage: React.FC = () => {
             <button
               key={sub.id}
               onClick={() => setSelectedSubjectFilter(sub.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 selectedSubjectFilter === sub.id
-                  ? 'bg-emerald-800 text-white shadow-xs'
-                  : 'bg-white text-emerald-900 hover:bg-emerald-100/60'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-700 border border-sky-200 dark:border-slate-700'
               }`}
             >
               {sub.name}
@@ -221,21 +221,21 @@ export const DigitalNotebookPage: React.FC = () => {
       </div>
 
       {successMsg && (
-        <div className="p-3.5 rounded-2xl bg-emerald-100/90 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2">
-          <Check className="w-4 h-4 text-emerald-700" />
+        <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+          <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="glass-card rounded-3xl p-12 text-center text-xs font-semibold text-emerald-700/80">
+        <div className="azure-card rounded-2xl p-12 text-center text-sm font-semibold text-slate-600 dark:text-slate-400">
           Loading digital notes...
         </div>
       ) : filteredNotes.length === 0 ? (
-        <div className="glass-card rounded-3xl p-12 text-center space-y-3">
-          <FileText className="w-10 h-10 text-emerald-300 mx-auto" />
-          <h3 className="text-sm font-bold text-emerald-950">No notes found</h3>
-          <p className="text-xs text-emerald-700/80 max-w-sm mx-auto font-medium">
+        <div className="azure-card rounded-2xl p-12 text-center space-y-3">
+          <FileText className="w-10 h-10 text-sky-300 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">No notes found</h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
             {searchQuery || selectedSubjectFilter !== 'ALL'
               ? "No notes matched your current filter criteria."
               : "Click 'Create New Note' above to start taking notes for your subjects."}
@@ -248,17 +248,17 @@ export const DigitalNotebookPage: React.FC = () => {
               key={note.id}
               whileHover={{ y: -3 }}
               onClick={() => openEditNoteModal(note)}
-              className="glass-card rounded-3xl p-6 border border-emerald-200/80 bg-white flex flex-col justify-between h-60 transition-all hover:border-emerald-400 hover:shadow-lg cursor-pointer group"
+              className="azure-card azure-card-hover rounded-2xl p-6 border border-sky-200/90 dark:border-sky-900/60 flex flex-col justify-between h-64 transition-all cursor-pointer group"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-sky-800 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 px-2.5 py-1 rounded-md border border-sky-200 dark:border-sky-800">
                     {note.subject_name || 'Subject'}
                   </span>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => handleDeleteNote(note.id, e)}
-                      className="p-1 text-emerald-600 hover:text-red-600 rounded-lg hover:bg-red-50"
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                       title="Delete note"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -266,17 +266,17 @@ export const DigitalNotebookPage: React.FC = () => {
                   </div>
                 </div>
 
-                <h3 className="text-base font-extrabold text-emerald-950 line-clamp-1">{note.title}</h3>
-                <p className="text-xs font-medium text-emerald-800/80 mt-2 line-clamp-4 leading-relaxed whitespace-pre-wrap">
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white line-clamp-1">{note.title}</h3>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-2 line-clamp-4 leading-relaxed whitespace-pre-wrap">
                   {note.content}
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-emerald-100 mt-auto flex items-center justify-between text-[10px] text-emerald-700/80 font-semibold">
-                <span>
+              <div className="pt-3 border-t border-sky-100 dark:border-slate-800 mt-auto flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                <span className="truncate pr-2">
                   {note.chapter_title ? `${note.chapter_title}` : 'General Subject Note'}
                 </span>
-                <span>
+                <span className="shrink-0">
                   {new Date(note.updated_at).toLocaleDateString()}
                 </span>
               </div>
@@ -285,25 +285,26 @@ export const DigitalNotebookPage: React.FC = () => {
         </div>
       )}
 
+      {/* Edit / Create Note Modal */}
       <AnimatePresence>
         {isEditing && (
-          <div className="fixed inset-0 z-50 bg-emerald-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-card bg-white rounded-3xl p-7 max-w-2xl w-full border border-emerald-200 shadow-2xl space-y-5"
+              className="azure-card bg-white dark:bg-slate-900 rounded-2xl p-7 max-w-2xl w-full border border-sky-200 dark:border-sky-800 shadow-2xl space-y-5"
             >
-              <div className="flex items-center justify-between border-b border-emerald-100 pb-4">
+              <div className="flex items-center justify-between border-b border-sky-100 dark:border-slate-800 pb-4">
                 <div className="flex items-center gap-2">
-                  <Edit3 className="w-5 h-5 text-emerald-800" />
-                  <h2 className="text-lg font-bold text-emerald-950">
+                  <Edit3 className="w-5 h-5 text-blue-600 dark:text-sky-400" />
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                     {activeNoteId ? 'Edit Digital Note' : 'Create New Digital Note'}
                   </h2>
                 </div>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="p-1 text-emerald-600 hover:text-emerald-900 rounded-full hover:bg-emerald-50"
+                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-full hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -312,7 +313,7 @@ export const DigitalNotebookPage: React.FC = () => {
               <form onSubmit={handleSaveNote} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-emerald-950 mb-1">Subject *</label>
+                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Subject *</label>
                     <select
                       required
                       value={subjectId}
@@ -321,7 +322,7 @@ export const DigitalNotebookPage: React.FC = () => {
                         setChapterId('');
                         setModuleId('');
                       }}
-                      className="w-full px-3 py-2 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-3 py-2 bg-sky-50/50 dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500"
                     >
                       <option value="">Select Subject</option>
                       {subjects.map(s => (
@@ -331,14 +332,14 @@ export const DigitalNotebookPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-emerald-950 mb-1">Chapter (Optional)</label>
+                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Chapter (Optional)</label>
                     <select
                       value={chapterId}
                       onChange={(e) => {
                         setChapterId(e.target.value);
                         setModuleId('');
                       }}
-                      className="w-full px-3 py-2 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-3 py-2 bg-sky-50/50 dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500"
                     >
                       <option value="">All Chapters</option>
                       {availableChapters.map(c => (
@@ -348,11 +349,11 @@ export const DigitalNotebookPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-emerald-950 mb-1">Module (Optional)</label>
+                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Module (Optional)</label>
                     <select
                       value={moduleId}
                       onChange={(e) => setModuleId(e.target.value)}
-                      className="w-full px-3 py-2 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-3 py-2 bg-sky-50/50 dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500"
                     >
                       <option value="">All Modules</option>
                       {availableModules.map(m => (
@@ -363,44 +364,44 @@ export const DigitalNotebookPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-emerald-950 mb-1">Note Title *</label>
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Note Title *</label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Photosynthesis Light Reaction Formulas"
-                    className="w-full px-4 py-2.5 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                    placeholder="e.g. Formula derivation for energy states"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-emerald-950 mb-1">Note Content *</label>
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Content (Markdown Supported) *</label>
                   <textarea
                     required
-                    rows={8}
+                    rows={6}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder="Write your study notes here..."
-                    className="w-full px-4 py-3 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
-                  ></textarea>
+                    placeholder="Type personal explanations, summaries, or questions here..."
+                    className="w-full p-4 bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500 leading-relaxed font-sans"
+                  />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-3 border-t border-emerald-100">
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-sky-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 bg-emerald-100/70 hover:bg-emerald-200/70 text-emerald-900 rounded-xl text-xs font-bold cursor-pointer"
+                    className="px-4 py-2 btn-secondary rounded-xl text-xs font-bold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-2 btn-primary rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     <Save className="w-4 h-4" />
-                    <span>{saving ? 'Saving...' : 'Save Note'}</span>
+                    <span>{saving ? 'Saving...' : activeNoteId ? 'Update Note' : 'Create Note'}</span>
                   </button>
                 </div>
               </form>

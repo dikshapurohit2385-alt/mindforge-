@@ -27,7 +27,7 @@ app.add_middleware(
 )
 
 # Import routers
-from app.api import auth, subjects, chapters, modules, notes, ask_teacher
+from app.api import auth, subjects, chapters, modules, notes, ask_teacher, documents
 
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(subjects.router, prefix=settings.API_V1_STR)
@@ -35,6 +35,7 @@ app.include_router(chapters.router, prefix=settings.API_V1_STR)
 app.include_router(modules.router, prefix=settings.API_V1_STR)
 app.include_router(notes.router, prefix=settings.API_V1_STR)
 app.include_router(ask_teacher.router, prefix=settings.API_V1_STR)
+app.include_router(documents.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

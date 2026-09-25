@@ -87,3 +87,66 @@ export interface AskTeacherQuestion {
   created_at: string;
   answered_at?: string;
 }
+
+export type DocumentStatus = 'UPLOADED' | 'PROCESSING' | 'EXTRACTED' | 'REVIEW_REQUIRED' | 'APPROVED' | 'REJECTED' | 'FAILED';
+
+export type ExtractionMethod = 'DIRECT_TEXT' | 'OCR' | 'HYBRID' | 'SCANNED_NEEDS_OCR';
+
+export interface StructuredSection {
+  type: 'heading' | 'subheading' | 'paragraph' | 'list' | 'table';
+  level?: number;
+  text?: string;
+  items?: string[];
+}
+
+export interface StructuredData {
+  page: number;
+  title?: string;
+  headings: string[];
+  sections: StructuredSection[];
+  learning_topics: string[];
+  has_tables: boolean;
+  confidence_score: number;
+}
+
+export interface ExtractedContentItem {
+  id: string;
+  document_id: string;
+  page_number: number;
+  content_text: string;
+  structured_data?: StructuredData;
+  extraction_method: ExtractionMethod;
+  is_edited: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentItem {
+  id: string;
+  title: string;
+  original_filename: string;
+  file_size: number;
+  mime_type: string;
+  page_count: number;
+  status: DocumentStatus;
+  error_message?: string;
+  subject_id: string;
+  chapter_id?: string;
+  module_id?: string;
+  subject_name?: string;
+  chapter_title?: string;
+  module_title?: string;
+  uploaded_by: string;
+  uploader_name?: string;
+  reviewed_by?: string;
+  reviewer_name?: string;
+  review_comment?: string;
+  reviewed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentDetail extends DocumentItem {
+  contents: ExtractedContentItem[];
+}
+

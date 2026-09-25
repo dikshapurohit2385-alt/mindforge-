@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './components/common/ProtectedRoutes';
 import { LayoutShell } from './components/layout/LayoutShell';
 
@@ -20,6 +21,8 @@ import { TeacherDashboard } from './pages/teacher/TeacherDashboard';
 import { SubjectManagementPage } from './pages/teacher/SubjectManagementPage';
 import { ChapterModuleManagementPage } from './pages/teacher/ChapterModuleManagementPage';
 import { AskTeacherInboxPage } from './pages/teacher/AskTeacherInboxPage';
+import { DocumentManagementPage } from './pages/teacher/DocumentManagementPage';
+import { DocumentReviewPage } from './pages/teacher/DocumentReviewPage';
 
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth();
@@ -30,8 +33,9 @@ const RootRedirect: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
           {/* Public Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
@@ -116,6 +120,22 @@ export const App: React.FC = () => {
                 </LayoutShell>
               }
             />
+            <Route
+              path="/teacher/documents"
+              element={
+                <LayoutShell>
+                  <DocumentManagementPage />
+                </LayoutShell>
+              }
+            />
+            <Route
+              path="/teacher/documents/:id/review"
+              element={
+                <LayoutShell>
+                  <DocumentReviewPage />
+                </LayoutShell>
+              }
+            />
           </Route>
 
           {/* Catch-all Fallback */}
@@ -123,6 +143,7 @@ export const App: React.FC = () => {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+  </ThemeProvider>
   );
 };
 

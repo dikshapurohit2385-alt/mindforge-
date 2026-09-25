@@ -1,5 +1,17 @@
 import { apiClient } from './client';
-import type { User, Subject, Chapter, Module, StudentNote, AskTeacherQuestion, QuestionStatus } from '../types';
+import type { 
+  User, 
+  Subject, 
+  Chapter, 
+  Module, 
+  StudentNote, 
+  AskTeacherQuestion, 
+  QuestionStatus,
+  DocumentItem,
+  DocumentDetail,
+  ExtractedContentItem,
+  DocumentStatus as DocStatusType
+} from '../types';
 
 // Auth Services
 export const authService = {
@@ -125,3 +137,60 @@ export const askTeacherService = {
     return res.data;
   }
 };
+
+// Document Services (Phase 2)
+export const documentService = {
+  upload: async (formData: FormData) => {
+    const res = await apiClient.post<DocumentItem>('/documents/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  },
+  getAll: async (filters?: { subject_id?: string; chapter_id?: string; module_id?: string; status?: DocStatusType }) => {
+    const params = new URLSearchParams();
+    if (filters?.subject_id) params.append('subject_id', filters.subject_id);
+    if (filters?.chapter_id) params.append('chapter_id', filters.chapter_id);
+    if (filters?.module_id) params.append('module_id', filters.module_id);
+    if (filters?.status) params.append('status', filters.status);
+
+    const res = await apiClient.get<DocumentItem[]>(`/documents?${params.toString()}`);
+    return res.data;
+  },
+  getById: async (id: string) => {
+    const res = await apiClient.get<DocumentDetail>(`/documents/${id}`);
+    return res.data;
+  },
+  getContent: async (id: string, page?: number) => {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.append('page', page.toString());
+    const res = await apiClient.get<ExtractedContentItem[]>(`/documents/${id}/content?${params.toString()}`);
+    return res.data;
+  },
+  updateContent: async (id: string, contentId: string, data: { content_text: string; structured_data?: any }) => {
+    const res = await apiClient.put<ExtractedContentItem>(`/documents/${id}/content/${contentId}`, data);
+    return res.data;
+  },
+  review: async (id: string, data: { status: 'APPROVED' | 'REJECTED'; comment?: string }) => {
+    const res = await apiClient.post<DocumentItem>(`/documents/${id}/review`, data);
+    return res.data;
+  },
+  delete: async (id: string) => {
+    await apiClient.delete(`/documents/${id}`);
+  },
+  downloadBlob: async (id: string, filename: string) => {
+    const response = await apiClient.get(`/documents/${id}/download`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+};
+
