@@ -6,10 +6,12 @@ import {
   BookOpen, 
   FileText, 
   MessageSquare, 
-  Sparkles, 
   Layers, 
   BarChart3,
-  Clock
+  Compass,
+  CheckSquare,
+  Flame,
+  Wand2
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -19,17 +21,20 @@ export const Sidebar: React.FC = () => {
   const studentLinks = [
     { name: 'Dashboard', to: '/student/dashboard', icon: LayoutDashboard },
     { name: 'My Subjects', to: '/student/subjects', icon: BookOpen },
+    { name: 'Adaptive Learning Path', to: '/student/learning-path', icon: Compass },
+    { name: 'Quizzes & Practice', to: '/student/quizzes', icon: CheckSquare },
+    { name: 'Flashcards & Revision', to: '/student/flashcards', icon: Flame },
     { name: 'Digital Notebook', to: '/student/notebook', icon: FileText },
     { name: 'Ask Teacher', to: '/student/ask-teacher', icon: MessageSquare },
-    { name: 'Learning Insights', to: '#', icon: Sparkles, comingSoon: true },
   ];
 
   const teacherLinks = [
     { name: 'Dashboard', to: '/teacher/dashboard', icon: LayoutDashboard },
     { name: 'Subject Management', to: '/teacher/subjects', icon: BookOpen },
     { name: 'Curriculum Documents', to: '/teacher/documents', icon: Layers },
+    { name: 'Student Analytics', to: '/teacher/analytics', icon: BarChart3 },
+    { name: 'AI Assistant Studio', to: '/teacher/ai-assistant', icon: Wand2 },
     { name: 'Student Questions', to: '/teacher/questions', icon: MessageSquare },
-    { name: 'Analytics', to: '#', icon: BarChart3, comingSoon: true },
   ];
 
   const links = isTeacher ? teacherLinks : studentLinks;
@@ -46,24 +51,6 @@ export const Sidebar: React.FC = () => {
         <nav className="space-y-1.5">
           {links.map((link) => {
             const Icon = link.icon;
-            if (link.comingSoon) {
-              return (
-                <div
-                  key={link.name}
-                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 text-sm font-medium cursor-not-allowed opacity-75 hover:bg-sky-50/50 dark:hover:bg-slate-800/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-                    <span>{link.name}</span>
-                  </div>
-                  <span className="text-[11px] bg-sky-100/90 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Soon
-                  </span>
-                </div>
-              );
-            }
-
             return (
               <NavLink
                 key={link.name}

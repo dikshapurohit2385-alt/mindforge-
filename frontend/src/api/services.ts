@@ -10,7 +10,24 @@ import type {
   DocumentItem,
   DocumentDetail,
   ExtractedContentItem,
-  DocumentStatus as DocStatusType
+  DocumentStatus as DocStatusType,
+  StudentProfile,
+  DiagnosticQuestion,
+  DiagnosticResult,
+  LearningPathData,
+  AdaptiveExplainResponse,
+  PersonalizedNoteItem,
+  FlashcardItem,
+  RevisionItem,
+  QuizItem,
+  QuizAttemptResult,
+  RAGQueryResponse,
+  KnowledgeGraphData,
+  PrerequisiteCheckResult,
+  RecommendationItem,
+  TeacherAnalyticsOverview,
+  StudentCohortItem,
+  StudentAnalyticsDetail
 } from '../types';
 
 // Auth Services
@@ -193,4 +210,188 @@ export const documentService = {
     window.URL.revokeObjectURL(url);
   }
 };
+
+// ==================== Phase 3 & 4 Services ====================
+
+// Student Learning Profile Services
+export const profileService = {
+  getMe: async () => {
+    const res = await apiClient.get<StudentProfile>('/profile/me');
+    return res.data;
+  },
+  updatePreferences: async (data: { learning_speed?: string; preferred_content_format?: string; learning_preferences?: any }) => {
+    const res = await apiClient.put<StudentProfile>('/profile/me/preferences', data);
+    return res.data;
+  }
+};
+
+// Diagnostic Assessment Services
+export const diagnosticService = {
+  getQuestions: async (subjectId: string) => {
+    const res = await apiClient.get<DiagnosticQuestion[]>(`/diagnostic/${subjectId}/questions`);
+    return res.data;
+  },
+  submitAssessment: async (subjectId: string, answers: Record<string, number>) => {
+    const res = await apiClient.post<DiagnosticResult>(`/diagnostic/${subjectId}/submit`, { answers });
+    return res.data;
+  },
+  getHistory: async (subjectId: string) => {
+    const res = await apiClient.get<DiagnosticResult[]>(`/diagnostic/${subjectId}/history`);
+    return res.data;
+  }
+};
+
+// Adaptive Learning Path Services
+export const learningPathService = {
+  getPath: async (subjectId: string) => {
+    const res = await apiClient.get<LearningPathData>(`/learning-path/${subjectId}`);
+    return res.data;
+  },
+  completeModule: async (moduleId: string) => {
+    const res = await apiClient.post<{ status: string; message: string }>(`/learning-path/module/${moduleId}/complete`);
+    return res.data;
+  }
+};
+
+// Adaptive Content & Personalized Notes Services
+export const adaptiveContentService = {
+  explain: async (data: { subject_id: string; module_id?: string; topic_title: string; explanation_level?: string; format_type?: string; custom_question?: string }) => {
+    const res = await apiClient.post<AdaptiveExplainResponse>('/adaptive-content/explain', data);
+    return res.data;
+  },
+  generateNotes: async (data: { subject_id: string; module_id?: string; topic_title: string }) => {
+    const res = await apiClient.post<PersonalizedNoteItem>('/adaptive-content/generate-notes', data);
+    return res.data;
+  },
+  getNotes: async (filters?: { subject_id?: string; module_id?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.subject_id) params.append('subject_id', filters.subject_id);
+    if (filters?.module_id) params.append('module_id', filters.module_id);
+    const res = await apiClient.get<PersonalizedNoteItem[]>(`/adaptive-content/notes?${params.toString()}`);
+    return res.data;
+  }
+};
+
+// Flashcards & Spaced Repetition (SM-2) Services
+export const flashcardService = {
+  getAll: async (filters?: { subject_id?: string; module_id?: string; due_only?: boolean }) => {
+    const params = new URLSearchParams();
+    if (filters?.subject_id) params.append('subject_id', filters.subject_id);
+    if (filters?.module_id) params.append('module_id', filters.module_id);
+    if (filters?.due_only) params.append('due_only', 'true');
+    const res = await apiClient.get<FlashcardItem[]>(`/flashcards?${params.toString()}`);
+    return res.data;
+  },
+  generate: async (data: { subject_id: string; module_id?: string; topic_title: string; count?: number }) => {
+    const res = await apiClient.post<FlashcardItem[]>('/flashcards/generate', data);
+    return res.data;
+  },
+  review: async (id: string, rating: 'AGAIN' | 'HARD' | 'GOOD' | 'EASY') => {
+    const res = await apiClient.post<{ status: string; rating: string; interval_days: number; next_review_due: string }>(`/flashcards/${id}/review`, { rating });
+    return res.data;
+  }
+};
+
+// Revision Queue Services
+export const revisionService = {
+  getQueue: async () => {
+    const res = await apiClient.get<RevisionItem[]>('/revision/queue');
+    return res.data;
+  },
+  complete: async (id: string) => {
+    const res = await apiClient.post<{ status: string; message: string }>(`/revision/${id}/complete`);
+    return res.data;
+  }
+};
+
+// Personalized Quizzes Services
+export const quizService = {
+  getAll: async (filters?: { subject_id?: string; module_id?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.subject_id) params.append('subject_id', filters.subject_id);
+    if (filters?.module_id) params.append('module_id', filters.module_id);
+    const res = await apiClient.get<QuizItem[]>(`/quizzes?${params.toString()}`);
+    return res.data;
+  },
+  getById: async (id: string) => {
+    const res = await apiClient.get<QuizItem>(`/quizzes/${id}`);
+    return res.data;
+  },
+  generate: async (data: { subject_id: string; module_id?: string; topic_title?: string; difficulty?: string; question_count?: number }) => {
+    const res = await apiClient.post<QuizItem>('/quizzes/generate', data);
+    return res.data;
+  },
+  submit: async (id: string, answers: Record<string, number>) => {
+    const res = await apiClient.post<QuizAttemptResult>(`/quizzes/${id}/submit`, { answers });
+    return res.data;
+  }
+};
+
+// RAG Q&A Services
+export const ragService = {
+  query: async (data: { subject_id: string; module_id?: string; question: string }) => {
+    const res = await apiClient.post<RAGQueryResponse>('/rag/query', data);
+    return res.data;
+  },
+  indexApproved: async () => {
+    const res = await apiClient.post<{ status: string; documents_indexed: number; total_chunks_created: number }>('/rag/index-approved');
+    return res.data;
+  }
+};
+
+// Knowledge Graph Services
+export const knowledgeGraphService = {
+  getGraph: async (subjectId: string) => {
+    const res = await apiClient.get<KnowledgeGraphData>(`/knowledge-graph/${subjectId}`);
+    return res.data;
+  },
+  checkPrerequisites: async (subjectId: string, nodeId: string) => {
+    const res = await apiClient.get<PrerequisiteCheckResult>(`/knowledge-graph/${subjectId}/prerequisites/${nodeId}`);
+    return res.data;
+  }
+};
+
+// Recommendations Engine Services
+export const recommendationService = {
+  getAll: async () => {
+    const res = await apiClient.get<RecommendationItem[]>('/recommendations');
+    return res.data;
+  },
+  dismiss: async (id: string) => {
+    const res = await apiClient.post<{ status: string; message: string }>(`/recommendations/${id}/dismiss`);
+    return res.data;
+  }
+};
+
+// Teacher Analytics & AI Assistant Services
+export const teacherAnalyticsService = {
+  getOverview: async () => {
+    const res = await apiClient.get<TeacherAnalyticsOverview>('/teacher/analytics/overview');
+    return res.data;
+  },
+  getCohort: async () => {
+    const res = await apiClient.get<StudentCohortItem[]>('/teacher/analytics/students');
+    return res.data;
+  },
+  getStudentDetail: async (studentId: string) => {
+    const res = await apiClient.get<StudentAnalyticsDetail>(`/teacher/analytics/students/${studentId}`);
+    return res.data;
+  }
+};
+
+export const teacherAssistantService = {
+  generate: async (data: { subject_id: string; content_type: string; topic: string; difficulty?: string; item_count?: number; additional_instructions?: string }) => {
+    const res = await apiClient.post<{ content_type: string; topic: string; difficulty: string; generated_data: any }>('/teacher/assistant/generate', data);
+    return res.data;
+  },
+  publishQuiz: async (data: { subject_id: string; chapter_id?: string; module_id?: string; title: string; difficulty: string; questions: any[] }) => {
+    const res = await apiClient.post<{ status: string; message: string; quiz_id: string }>('/teacher/assistant/publish-quiz', data);
+    return res.data;
+  },
+  publishFlashcards: async (data: { subject_id: string; chapter_id?: string; module_id?: string; flashcards: any[] }) => {
+    const res = await apiClient.post<{ status: string; message: string }>('/teacher/assistant/publish-flashcards', data);
+    return res.data;
+  }
+};
+
 
