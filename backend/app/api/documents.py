@@ -253,9 +253,10 @@ def update_extracted_content(
 
 
 @router.post("/{id}/review", response_model=DocumentOut)
-def review_document(
+async def review_document(
     id: str,
     review_in: DocumentReviewIn,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
@@ -279,6 +280,14 @@ def review_document(
 
     db.commit()
     db.refresh(doc)
+
+    if doc.status == DocumentStatus.APPROVED:
+        from app.services.rag_service import rag_service
+        try:
+            await rag_service.index_document(doc.id, db)
+        except Exception as e:
+            print(f"[RAG] Automatic indexing error: {e}")
+
     return format_document_out(doc)
 
 

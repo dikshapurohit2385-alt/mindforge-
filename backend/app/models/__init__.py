@@ -1,6 +1,32 @@
 from app.models.user import User, Student, Teacher, Institution, UserRole
 from app.models.academic import Subject, Chapter, Module, StudentNote, AskTeacherQuestion, QuestionStatus
 from app.models.document import Document, ExtractedContent, DocumentStatus, ExtractionMethod
+from app.models.learning_engine import (
+    StudentLearningProfile,
+    ConceptMastery,
+    DiagnosticAssessment,
+    DiagnosticQuestion,
+    Quiz,
+    QuizQuestion,
+    QuizAttempt,
+    Flashcard,
+    FlashcardReview,
+    RevisionItem,
+    PersonalizedNote,
+    DocumentChunk,
+    KnowledgeNode,
+    KnowledgeEdge,
+    StudentRecommendation,
+    ModuleCompletion,
+    KnowledgeLevel,
+    ConceptStatus,
+    LearningSpeed,
+    PriorityLevel,
+    QuizDifficulty,
+    FlashcardRating,
+    ActionType,
+    RelationshipType
+)
 
 __all__ = [
     "User",
@@ -18,4 +44,28 @@ __all__ = [
     "ExtractedContent",
     "DocumentStatus",
     "ExtractionMethod",
+    "StudentLearningProfile",
+    "ConceptMastery",
+    "DiagnosticAssessment",
+    "DiagnosticQuestion",
+    "Quiz",
+    "QuizQuestion",
+    "QuizAttempt",
+    "Flashcard",
+    "FlashcardReview",
+    "RevisionItem",
+    "PersonalizedNote",
+    "DocumentChunk",
+    "KnowledgeNode",
+    "KnowledgeEdge",
+    "StudentRecommendation",
+    "ModuleCompletion",
+    "KnowledgeLevel",
+    "ConceptStatus",
+    "LearningSpeed",
+    "PriorityLevel",
+    "QuizDifficulty",
+    "FlashcardRating",
+    "ActionType",
+    "RelationshipType"
 ]

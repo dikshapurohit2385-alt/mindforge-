@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { subjectService, askTeacherService } from '../../api/services';
-import type { Subject, AskTeacherQuestion } from '../../types';
+import { subjectService, askTeacherService, teacherAnalyticsService } from '../../api/services';
+import type { Subject, AskTeacherQuestion, TeacherAnalyticsOverview } from '../../types';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   BookOpen, 
@@ -10,8 +10,11 @@ import {
   Plus, 
   ArrowRight, 
   CheckCircle2, 
-  Sparkles,
-  FileCheck2
+  Sparkles, 
+  Users, 
+  TrendingUp, 
+  AlertTriangle, 
+  Award
 } from 'lucide-react';
 
 export const TeacherDashboard: React.FC = () => {
@@ -20,17 +23,20 @@ export const TeacherDashboard: React.FC = () => {
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [questions, setQuestions] = useState<AskTeacherQuestion[]>([]);
+  const [analytics, setAnalytics] = useState<TeacherAnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [subData, qData] = await Promise.all([
+        const [subData, qData, analyticsData] = await Promise.all([
           subjectService.getAll(),
-          askTeacherService.getTeacherQuestions()
+          askTeacherService.getTeacherQuestions(),
+          teacherAnalyticsService.getOverview().catch(() => null)
         ]);
         setSubjects(subData);
         setQuestions(qData);
+        setAnalytics(analyticsData);
       } catch (err) {
         console.error("Teacher dashboard fetch error:", err);
       } finally {
@@ -40,11 +46,6 @@ export const TeacherDashboard: React.FC = () => {
     fetchData();
   }, []);
 
-  const totalSubjects = subjects.length;
-  const totalChapters = subjects.reduce((acc, s) => acc + (s.chapters?.length || s.chapter_count || 0), 0);
-  const totalModules = subjects.reduce((acc, s) => {
-    return acc + (s.chapters ? s.chapters.reduce((mAcc, c) => mAcc + (c.modules?.length || 0), 0) : 0);
-  }, 0);
   const pendingQuestions = questions.filter(q => q.status === 'PENDING').length;
 
   return (
@@ -54,28 +55,35 @@ export const TeacherDashboard: React.FC = () => {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-800/50 text-sky-200 text-xs font-bold backdrop-blur-md mb-3 border border-sky-500/30">
             <Sparkles className="w-3.5 h-3.5 text-sky-300" />
-            <span>Teacher Management Studio</span>
+            <span>AI-Powered Teacher Studio</span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">
             Welcome, {user?.name || 'Educator'}! 🎓
           </h1>
           <p className="text-sm font-medium text-sky-100/90 mt-2 leading-relaxed">
-            Manage your subjects, publish chapters and modules, and answer student questions directly.
+            Monitor real-time cohort mastery, intervene for struggling students, and synthesize curriculum content using AI.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button 
-              onClick={() => navigate('/teacher/subjects')}
+              onClick={() => navigate('/teacher/ai-assistant')}
+              className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-yellow-300" />
+              <span>AI Content Assistant</span>
+            </button>
+            <button 
+              onClick={() => navigate('/teacher/analytics')}
               className="px-5 py-2.5 bg-white text-slate-900 hover:bg-sky-50 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 cursor-pointer"
             >
-              <Plus className="w-4 h-4 text-blue-600" />
-              <span>Create New Subject</span>
+              <TrendingUp className="w-4 h-4 text-blue-600" />
+              <span>Cohort Analytics</span>
             </button>
             <button 
               onClick={() => navigate('/teacher/questions')}
               className="px-5 py-2.5 bg-blue-900/60 hover:bg-blue-800 text-white rounded-xl text-sm font-semibold backdrop-blur-xs border border-white/20 transition-all flex items-center gap-2 cursor-pointer"
             >
               <MessageSquare className="w-4 h-4" />
-              <span>Question Inbox ({pendingQuestions} pending)</span>
+              <span>Doubts ({pendingQuestions} pending)</span>
             </button>
           </div>
         </div>
@@ -86,29 +94,35 @@ export const TeacherDashboard: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="azure-card rounded-2xl p-5 border border-sky-200/90 dark:border-sky-900/60">
           <div className="flex items-center justify-between text-blue-600 dark:text-sky-400 mb-2">
-            <BookOpen className="w-5 h-5" />
-            <span className="text-[11px] font-bold uppercase tracking-wider bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800">Subjects</span>
+            <Users className="w-5 h-5" />
+            <span className="text-[11px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-800">Cohort</span>
           </div>
-          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalSubjects}</h3>
-          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-0.5">Active Courses</p>
+          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            {analytics?.total_students ?? 0}
+          </h3>
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-0.5">Enrolled Students</p>
         </div>
 
         <div className="azure-card rounded-2xl p-5 border border-sky-200/90 dark:border-sky-900/60">
-          <div className="flex items-center justify-between text-sky-600 dark:text-sky-400 mb-2">
-            <Layers className="w-5 h-5" />
-            <span className="text-[11px] font-bold uppercase tracking-wider bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800">Chapters</span>
+          <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-2">
+            <TrendingUp className="w-5 h-5" />
+            <span className="text-[11px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">Progress</span>
           </div>
-          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalChapters}</h3>
-          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-0.5">Total Chapters</p>
+          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            {Math.round(analytics?.average_class_progress ?? 0)}%
+          </h3>
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-0.5">Cohort Avg Progress</p>
         </div>
 
         <div className="azure-card rounded-2xl p-5 border border-sky-200/90 dark:border-sky-900/60">
-          <div className="flex items-center justify-between text-cyan-600 dark:text-cyan-400 mb-2">
-            <FileCheck2 className="w-5 h-5" />
-            <span className="text-[11px] font-bold uppercase tracking-wider bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-300 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800">Modules</span>
+          <div className="flex items-center justify-between text-purple-600 dark:text-purple-400 mb-2">
+            <Award className="w-5 h-5" />
+            <span className="text-[11px] font-bold uppercase tracking-wider bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800">Accuracy</span>
           </div>
-          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalModules}</h3>
-          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-0.5">Total Modules</p>
+          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            {Math.round(analytics?.average_quiz_accuracy ?? 0)}%
+          </h3>
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-0.5">Quiz Mastery Avg</p>
         </div>
 
         <div className="azure-card rounded-2xl p-5 border border-sky-200/90 dark:border-sky-900/60">
@@ -120,6 +134,129 @@ export const TeacherDashboard: React.FC = () => {
           <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-0.5">Pending Questions</p>
         </div>
       </div>
+
+      {/* Students Needing Attention Section */}
+      {analytics && analytics.students_needing_attention && analytics.students_needing_attention.length > 0 && (
+        <div className="azure-card rounded-2xl p-6 border border-amber-200/90 dark:border-amber-900/50 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Students Needing Support ({analytics.students_needing_attention.length})
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Learners with below-target accuracy or recurring struggles requiring timely educator intervention.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/teacher/analytics"
+              className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 flex items-center gap-1"
+            >
+              <span>View Full Cohort</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {analytics.students_needing_attention.slice(0, 3).map((st) => (
+              <div
+                key={st.student_id}
+                className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-900/40 space-y-2.5 shadow-2xs hover:border-amber-400 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                    {st.student_name}
+                  </span>
+                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                    st.risk_level === 'HIGH'
+                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                  }`}>
+                    {st.risk_level} RISK
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                  <span>Quiz Accuracy: <b className="text-slate-800 dark:text-slate-200">{Math.round(st.quiz_accuracy)}%</b></span>
+                  <span>Progress: <b className="text-slate-800 dark:text-slate-200">{Math.round(st.overall_progress)}%</b></span>
+                </div>
+
+                {st.struggling_topics && st.struggling_topics.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Struggling with:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {st.struggling_topics.slice(0, 3).map((top, idx) => (
+                        <span key={idx} className="text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+                          {top}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => navigate(`/teacher/analytics?studentId=${st.student_id}`)}
+                  className="w-full mt-1 py-1.5 rounded-lg text-xs font-bold text-blue-700 dark:text-blue-300 bg-sky-50 dark:bg-slate-800 hover:bg-sky-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <span>Student Drilldown</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Difficult vs Improved Topics Row */}
+      {analytics && (analytics.most_difficult_topics?.length > 0 || analytics.most_improved_topics?.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Difficult Topics */}
+          <div className="azure-card rounded-2xl p-5 border border-sky-200/90 dark:border-sky-900/60 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-500" />
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Most Challenging Concepts</h4>
+            </div>
+            <div className="space-y-2">
+              {analytics.most_difficult_topics.slice(0, 3).map((item, idx) => (
+                <div key={idx} className="p-2.5 rounded-xl bg-rose-50/50 dark:bg-slate-900/60 border border-rose-100 dark:border-rose-950 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">{item.topic_name}</span>
+                    <span className="text-[10px] text-slate-500">{item.subject_name}</span>
+                  </div>
+                  <span className="text-xs font-bold text-rose-700 dark:text-rose-400">
+                    {Math.round(item.failure_rate_percentage)}% failure rate
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Improved Topics */}
+          <div className="azure-card rounded-2xl p-5 border border-sky-200/90 dark:border-sky-900/60 space-y-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Top Mastered Concepts</h4>
+            </div>
+            <div className="space-y-2">
+              {analytics.most_improved_topics.slice(0, 3).map((item, idx) => (
+                <div key={idx} className="p-2.5 rounded-xl bg-emerald-50/50 dark:bg-slate-900/60 border border-emerald-100 dark:border-emerald-950 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">{item.topic_name}</span>
+                    <span className="text-[10px] text-slate-500">{item.subject_name}</span>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                    {Math.round(item.average_score)}% mastery
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
