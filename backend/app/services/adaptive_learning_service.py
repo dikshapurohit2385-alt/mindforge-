@@ -1,4 +1,5 @@
 import os
+import json
 import random
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
@@ -6,6 +7,7 @@ import httpx
 from sqlalchemy.orm import Session
 from app.models.learning_engine import (
     StudentLearningProfile,
+    DiagnosticAssessment,
     ConceptMastery,
     Flashcard,
     FlashcardReview,
@@ -15,7 +17,7 @@ from app.models.learning_engine import (
     QuizQuestion,
     QuizAttempt
 )
-from app.models.academic import Subject, Module
+from app.models.academic import Subject, Chapter, Module
 
 class AdaptiveLearningService:
     # ---------------- 1. Multi-Level Adaptive Explanations ----------------
@@ -729,5 +731,241 @@ class AdaptiveLearningService:
             "graded_questions": graded_details,
             "recommendation": rec_text
         }
+
+    # ---------------- 6. Chapter Adaptive Lesson Generation ----------------
+    async def generate_chapter_adaptive_lesson(
+        self,
+        student_id: str,
+        chapter_id: str,
+        db: Session
+    ) -> Dict[str, Any]:
+        from app.services.rag_service import rag_service
+        from app.services.knowledge_graph_service import knowledge_graph_service
+
+        chapter = db.query(Chapter).filter(Chapter.id == chapter_id).first()
+        if not chapter:
+            raise ValueError(f"Chapter {chapter_id} not found")
+
+        subject = db.query(Subject).filter(Subject.id == chapter.subject_id).first()
+        subject_name = subject.name if subject else "Subject"
+
+        # Fetch DiagnosticAssessment for this chapter
+        diag = db.query(DiagnosticAssessment).filter(
+            DiagnosticAssessment.student_id == student_id,
+            DiagnosticAssessment.chapter_id == chapter_id
+        ).order_by(DiagnosticAssessment.completed_at.desc()).first()
+
+        # Fallback profile if student hasn't taken diagnostic yet
+        if diag and diag.learner_profile:
+            profile = diag.learner_profile
+            student_explanation = diag.student_explanation or "Adaptive lesson tailored to your diagnostic results."
+        else:
+            profile = {
+                "knowledge_level": "foundational",
+                "difficulty_level": "moderate",
+                "interest_level": "medium",
+                "visual_support_need": "high",
+                "real_world_interest": "high",
+                "content_density": "low",
+                "explanation_complexity": "simple",
+                "example_frequency": "high",
+                "memory_support": "high",
+                "contradiction_flag": False,
+                "confidence_score": 0.5
+            }
+            student_explanation = "Before starting, take the quick 1-minute diagnostic above to personalize this lesson further!"
+
+        # Query RAG Grounded Content
+        rag_res = await rag_service.query_knowledge_base(
+            subject_id=chapter.subject_id,
+            question=f"Explain {chapter.title} core concepts, definitions, real world applications, and examples",
+            module_id=None,
+            db=db
+        )
+        rag_context = rag_res.get("answer", "") if rag_res.get("source_found") else ""
+
+        # Query Knowledge Graph Prerequisites
+        graph_data = knowledge_graph_service.get_or_seed_knowledge_graph(chapter.subject_id, db)
+        prereqs_recap = [n.name for n in graph_data.get("nodes", [])[:2]]
+
+        # Construct Structured Sections based on Learner Profile
+        knowledge_lvl = profile.get("knowledge_level", "foundational")
+        is_visual = profile.get("visual_support_need", "high") == "high"
+        is_rw = profile.get("real_world_interest", "high") == "high"
+        is_low_interest = profile.get("interest_level", "medium") == "low"
+
+        sections = []
+
+        # 1. Concept Introduction
+        if knowledge_lvl == "foundational":
+            intro_title = f"1. Baseline Principles of {chapter.title}"
+            intro_content = (
+                f"Before moving into advanced details, let's establish what **{chapter.title}** represents in simple words.\n\n"
+                f"{chapter.description or 'This topic covers essential foundations that build directly on everyday observations.'}\n\n"
+                f"**Key Focus:** Understanding the foundational definitions and core relationships."
+            )
+            intro_bullets = [
+                f"What is {chapter.title}?",
+                "Core definitions & baseline terms",
+                "Why this principle matters"
+            ]
+        elif knowledge_lvl == "advanced":
+            intro_title = f"1. Advanced Overview: {chapter.title}"
+            intro_content = (
+                f"You have demonstrated a strong baseline in this area. We will focus on higher-order application, structural mechanics, and edge conditions of **{chapter.title}**.\n\n"
+                f"{chapter.description or 'Explores advanced interactions and mathematical/analytical frameworks.'}"
+            )
+            intro_bullets = [
+                f"Analytical framework of {chapter.title}",
+                "State transitions and system constraints",
+                "Higher-order problem solving"
+            ]
+        else:
+            intro_title = f"1. Understanding {chapter.title}"
+            intro_content = (
+                f"**{chapter.title}** is a central concept in {subject_name}. It explains how components interact under specific conditions.\n\n"
+                f"{chapter.description or 'Covers practical properties and foundational rules.'}"
+            )
+            intro_bullets = [
+                f"Main principles of {chapter.title}",
+                "Operational rules and behavior",
+                "Practical applications"
+            ]
+
+        sections.append({
+            "title": intro_title,
+            "section_type": "concept",
+            "content": intro_content,
+            "bullet_points": intro_bullets,
+            "visual_component": None,
+            "quick_check_question": None
+        })
+
+        # 2. In Simple Words
+        sections.append({
+            "title": "2. In Simple Words",
+            "section_type": "in_simple_words",
+            "content": (
+                f"Imagine **{chapter.title}** like an everyday mechanism. Rather than memorizing long formulas, think of it as a set of rules:\n\n"
+                f"- **Condition:** When an input or change occurs\n"
+                f"- **Action:** The system responds according to standard principles\n"
+                f"- **Result:** A predictable, measurable outcome"
+            ),
+            "bullet_points": [
+                "Simple mental model",
+                "Cause-and-effect relationship",
+                "Predictable outcomes"
+            ],
+            "visual_component": None,
+            "quick_check_question": None
+        })
+
+        # 3. Structured Visual Component (Comparison Table & Flow Diagram)
+        if is_visual or profile.get("difficulty_level") == "high":
+            flow_steps = [
+                {"step_number": "1", "title": "Baseline Input", "description": f"Initial state before {chapter.title} process begins."},
+                {"step_number": "2", "title": "Core Reaction / Process", "description": f"The main interaction or state shift in {chapter.title}."},
+                {"step_number": "3", "title": "Measurable Result", "description": "Final output, equilibrium, or observed product."}
+            ]
+            comp_headers = ["Property", f"Standard {chapter.title}", "Opposite / Boundary State"]
+            comp_rows = [
+                ["Primary Characteristic", "Active & Responsive", "Passive / Inert"],
+                ["Observed Indicator", "Measurable state change", "No reaction"],
+                ["Typical Example", f"Core process of {chapter.title}", "Control baseline"]
+            ]
+            sections.append({
+                "title": "3. Visual Breakdown & Process Flow",
+                "section_type": "flow_diagram",
+                "content": f"Use this step-by-step visual process flow to understand how **{chapter.title}** operates from start to finish:",
+                "bullet_points": ["Step 1: Baseline Input", "Step 2: Core Reaction", "Step 3: Measurable Result"],
+                "visual_component": {
+                    "type": "flow_diagram",
+                    "title": f"Process Lifecycle of {chapter.title}",
+                    "steps": flow_steps,
+                    "headers": comp_headers,
+                    "rows": comp_rows
+                },
+                "quick_check_question": None
+            })
+
+        # 4. Real-World Applications (Grounded in RAG context if available)
+        rw_body = rag_context if rag_context else (
+            f"Here is how **{chapter.title}** shows up in daily life:\n\n"
+            f"- **Household items:** Common acids & bases like vinegar, lemons, soap, and toothpaste.\n"
+            f"- **Biological systems:** Stomach digestive acids and soil pH balance for plants.\n"
+            f"- **Industrial uses:** Water purification and chemical manufacturing."
+        )
+        sections.append({
+            "title": "4. Real-World Applications",
+            "section_type": "real_world_application",
+            "content": rw_body,
+            "bullet_points": ["Vinegar & Lemons (Acidic)", "Soap & Toothpaste (Basic)", "Stomach Acid & Digestion"],
+            "visual_component": None,
+            "quick_check_question": None
+        })
+
+        # 5. Remember Memory Trick
+        sections.append({
+            "title": "5. Key Memory Tip",
+            "section_type": "remember_tip",
+            "content": (
+                f"> **Remember:**\n"
+                f"> Lower pH values (< 7) → More Acidic\n"
+                f"> Higher pH values (> 7) → More Basic / Alkaline\n"
+                f"> Neutral (pH = 7) → Pure Water"
+            ),
+            "bullet_points": ["pH < 7 = Acidic", "pH = 7 = Neutral", "pH > 7 = Basic"],
+            "visual_component": None,
+            "quick_check_question": None
+        })
+
+        # 6. Quick Check Question
+        sections.append({
+            "title": "6. Quick Check",
+            "section_type": "quick_check",
+            "content": f"Test your intuition on **{chapter.title}** with this quick question:",
+            "bullet_points": [],
+            "visual_component": None,
+            "quick_check_question": {
+                "question": f"Which of the following is a primary characteristic of {chapter.title}?",
+                "options": [
+                    f"It causes predictable state changes under specific environmental rules",
+                    "It has no measurable properties under any conditions",
+                    "It only exists in outer space",
+                    "It requires computer code to function"
+                ],
+                "correct_option_index": 0,
+                "explanation": f"State changes according to consistent rules form the fundamental definition of {chapter.title}."
+            }
+        })
+
+        lesson_out = {
+            "chapter_id": chapter.id,
+            "chapter_title": chapter.title,
+            "subject_id": chapter.subject_id,
+            "subject_name": subject_name,
+            "student_explanation": student_explanation,
+            "learner_profile": {
+                "student_id": student_id,
+                "chapter_id": chapter_id,
+                "knowledge_level": profile.get("knowledge_level", "foundational"),
+                "difficulty_level": profile.get("difficulty_level", "moderate"),
+                "interest_level": profile.get("interest_level", "medium"),
+                "visual_support_need": profile.get("visual_support_need", "high"),
+                "real_world_interest": profile.get("real_world_interest", "high"),
+                "content_density": profile.get("content_density", "low"),
+                "explanation_complexity": profile.get("explanation_complexity", "simple"),
+                "example_frequency": profile.get("example_frequency", "high"),
+                "memory_support": profile.get("memory_support", "high"),
+                "contradiction_flag": profile.get("contradiction_flag", False),
+                "confidence_score": profile.get("confidence_score", 0.5),
+                "student_explanation": student_explanation,
+                "completed_at": diag.completed_at if diag else datetime.now(timezone.utc)
+            },
+            "prerequisites_recap": prereqs_recap,
+            "sections": sections
+        }
+
+        return lesson_out
 
 adaptive_learning_service = AdaptiveLearningService()

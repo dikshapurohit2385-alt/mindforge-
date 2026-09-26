@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adaptiveContentService, noteService } from '../../api/services';
-import type { ChapterAdaptiveLesson, StudentNote } from '../../types';
+import type { ChapterAdaptiveLesson, StudentNote, TextHighlight } from '../../types';
 import { VisualDiagramRenderer } from '../../components/common/VisualDiagramRenderer';
 import { InteractiveStudyWorkspace } from '../../components/common/InteractiveStudyWorkspace';
 import { 
@@ -12,8 +12,6 @@ import {
   Lightbulb, 
   Brain, 
   HelpCircle, 
-  Flame, 
-  CheckSquare, 
   FileText,
   Loader2,
   AlertTriangle,
@@ -174,86 +172,234 @@ export const StudySpacePage: React.FC = () => {
     );
   }
 
+  const takeNotesJSX = (
+    <div className="notebook-editor-area flex-1 flex flex-col min-h-0 space-y-3 relative">
+      {/* Document Editor Header */}
+      <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-800 pb-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-indigo-600 dark:text-sky-400" />
+          <h3 className="text-xs font-bold text-stone-900 dark:text-white uppercase tracking-wider">
+            TAKE NOTES
+          </h3>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-semibold text-stone-400 dark:text-slate-500 hidden sm:inline">
+            Drag top handle up/down to resize
+          </span>
+          {noteSaveSuccess && (
+            <div className="px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{noteSaveSuccess}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Clean Document Form */}
+      <form onSubmit={handleSaveLessonNote} className="flex-1 flex flex-col min-h-0 space-y-2.5">
+        {/* Document Title Heading Input */}
+        <div className="shrink-0">
+          <input
+            type="text"
+            required
+            value={noteTitle}
+            onChange={(e) => setNoteTitle(e.target.value)}
+            placeholder="Document Note Title *"
+            className="w-full px-3.5 py-1.5 bg-stone-50 dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl text-xs font-bold text-stone-900 dark:text-white placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
+          />
+        </div>
+
+        {/* Multi-line Document Editor Textarea with Auto-wrapping */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <textarea
+            required
+            rows={3}
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+            placeholder="Start typing your notes here. Text automatically wraps to the next line as you write..."
+            className="w-full flex-1 min-h-[60px] p-3 bg-stone-50/60 dark:bg-slate-850 border border-stone-200 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm font-sans font-normal text-stone-800 dark:text-stone-100 placeholder-stone-400 leading-relaxed focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 resize-none overflow-y-auto whitespace-pre-wrap break-words"
+          />
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex items-center justify-between pt-1 shrink-0">
+          <span className="text-[10px] font-medium text-stone-400 dark:text-slate-500">
+            Saved notes synchronize with /student/notebook
+          </span>
+
+          <div className="flex items-center gap-2">
+            {activeNoteId && (
+              <button
+                type="button"
+                onClick={() => { setActiveNoteId(null); setNoteTitle(''); setNoteContent(''); }}
+                className="px-3 py-1.5 text-xs font-bold text-stone-600 dark:text-slate-400 hover:text-stone-900 cursor-pointer"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={savingNote || !noteTitle.trim() || !noteContent.trim()}
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs transition-colors"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{savingNote ? 'Saving...' : activeNoteId ? 'Update Note' : 'Save to Notebook'}</span>
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {/* Recent Saved Notes Chips */}
+      {chapterNotes.length > 0 && (
+        <div className="pt-2 border-t border-stone-100 dark:border-slate-800 flex items-center gap-2 overflow-x-auto shrink-0">
+          <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider shrink-0">
+            Recent Chapter Notes ({chapterNotes.length}):
+          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            {chapterNotes.slice(0, 3).map((n) => (
+              <div key={n.id} className="px-2.5 py-1 bg-stone-50 dark:bg-slate-800 rounded-lg border border-stone-200 dark:border-slate-700 flex items-center gap-2 text-[11px]">
+                <span className="font-bold text-stone-900 dark:text-white truncate max-w-[130px]">{n.title}</span>
+                <button onClick={() => handleEditNote(n)} className="text-indigo-600 dark:text-sky-400 hover:underline cursor-pointer"><Edit3 className="w-3 h-3" /></button>
+                <button onClick={() => handleDeleteNote(n.id)} className="text-rose-600 hover:underline cursor-pointer"><Trash2 className="w-3 h-3" /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const topHeaderJSX = (
+    <div className="flex items-center justify-between gap-3 w-full">
+      <button
+        onClick={() => navigate(`/student/subjects/${lesson.subject_id}`)}
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span>Back to Subject</span>
+      </button>
+
+      <div className="text-center">
+        <span className="text-[10px] font-extrabold tracking-widest text-stone-400 dark:text-slate-500 uppercase block">
+          {lesson.subject_name} · CLASS 9
+        </span>
+        <h1 className="text-xs sm:text-sm font-black text-stone-900 dark:text-white tracking-tight truncate max-w-[200px] sm:max-w-md">
+          {lesson.chapter_title}
+        </h1>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {lesson.learner_profile?.knowledge_level && (
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100/80 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1 hidden sm:flex">
+            <Award className="w-3.5 h-3.5 text-emerald-600" />
+            <span>AI Calibrated ({lesson.learner_profile.knowledge_level})</span>
+          </span>
+        )}
+        <button
+          onClick={() => navigate('/student/notebook')}
+          className="px-3.5 py-1 bg-stone-900 text-white hover:bg-black rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+        >
+          <FileText className="w-3.5 h-3.5 text-amber-400" />
+          <span>Notebook</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderHighlightedContent = (content: string, activeHighlights: TextHighlight[]) => {
+    if (!activeHighlights || activeHighlights.length === 0 || !content) return content;
+
+    const matchingHls = activeHighlights.filter(h => h.selected_text && content.toLowerCase().includes(h.selected_text.toLowerCase()));
+    if (matchingHls.length === 0) return content;
+
+    const sortedHls = [...matchingHls].sort((a, b) => b.selected_text.length - a.selected_text.length);
+    const escapedSnippets = sortedHls.map(h => h.selected_text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const pattern = new RegExp(`(${escapedSnippets.join('|')})`, 'gi');
+
+    const parts = content.split(pattern);
+    return parts.map((part, i) => {
+      const matched = sortedHls.find(h => h.selected_text.toLowerCase() === part.toLowerCase());
+      if (matched) {
+        const bgClass =
+          matched.color === 'yellow' ? 'bg-amber-200/90 dark:bg-amber-900/80 text-amber-950 dark:text-amber-100 border-amber-400' :
+          matched.color === 'blue' ? 'bg-sky-200/90 dark:bg-sky-900/80 text-sky-950 dark:text-sky-100 border-sky-400' :
+          'bg-emerald-200/90 dark:bg-emerald-900/80 text-emerald-950 dark:text-emerald-100 border-emerald-400';
+
+        return (
+          <mark key={i} className={`${bgClass} border-b-2 font-semibold px-1 rounded shadow-2xs transition-colors`}>
+            {part}
+          </mark>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
-    <div className="w-full space-y-6 pb-20 max-w-7xl mx-auto">
-      {/* 3-Part Study Space Workspace Container */}
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden w-full h-full">
       <InteractiveStudyWorkspace 
         subjectId={lesson.subject_id} 
         chapterId={lesson.chapter_id}
         chapterTitle={lesson.chapter_title}
         subjectName={lesson.subject_name}
+        sections={lesson.sections}
+        headerElement={topHeaderJSX}
+        takeNotesElement={takeNotesJSX}
       >
-        {/* CENTER AREA (~70% width): Unified Digital Textbook Page inside .lesson-reading-area */}
-        <div className="space-y-6">
-          
-          {/* Digital Textbook Reading Sheet */}
-          <div className="bg-[#fcfbf7] dark:bg-slate-900 border border-stone-300/80 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-sm relative overflow-hidden">
-            {/* Textbook Page Decorative Left Margin Line */}
-            <div className="absolute left-4 sm:left-6 top-0 bottom-0 w-px bg-rose-300/40 dark:bg-rose-950/40 pointer-events-none" />
-
-            {/* Unified Top Header Bar matching specification */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 dark:border-slate-800 pb-5 mb-8 pl-4 sm:pl-6">
-              <button
-                onClick={() => navigate(`/student/subjects/${lesson.subject_id}`)}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
-              </button>
-
-              <div className="text-center font-serif">
-                <span className="text-[10px] font-extrabold tracking-widest text-stone-500 uppercase block mb-0.5">
-                  {lesson.subject_name} · CLASS 9
-                </span>
-                <h1 className="text-lg sm:text-2xl font-black text-stone-900 dark:text-white tracking-tight">
-                  {lesson.chapter_title}
-                </h1>
+        {({ highlights }) => (
+          <div className="space-y-6">
+            
+            {/* Chapter Title & Overview Banner Card */}
+            <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-md space-y-3 shrink-0">
+              <div className="flex items-center gap-2 text-sky-400 font-bold text-xs uppercase tracking-widest">
+                <BookOpen className="w-4 h-4" />
+                <span>{lesson.subject_name} · CLASS 9</span>
               </div>
-
-              <div className="flex items-center gap-2">
-                {lesson.learner_profile?.knowledge_level && (
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100/80 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
-                    <Award className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>AI Calibrated ({lesson.learner_profile.knowledge_level})</span>
-                  </span>
-                )}
-                <button
-                  onClick={() => navigate('/student/notebook')}
-                  className="px-3.5 py-1.5 bg-stone-900 text-white hover:bg-black rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <FileText className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Notebook</span>
-                </button>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-black font-serif tracking-tight text-white">
+                {lesson.chapter_title}
+              </h1>
+              <p className="text-xs sm:text-sm text-stone-300 leading-relaxed max-w-2xl font-sans font-medium">
+                Read the interactive textbook content below. Highlight key concepts, add notes, and ask your persistent AI Tutor any questions.
+              </p>
             </div>
 
-            {/* Textbook Reading Content */}
-            <div className="space-y-8 pl-4 sm:pl-6">
-              {lesson.sections.map((sec, idx) => (
-                <div key={idx} className="space-y-4 pb-6 border-b border-stone-200/60 dark:border-slate-800/80 last:border-b-0 last:pb-0">
-                  {/* Section Title */}
-                  <div className="flex items-center gap-2.5">
-                    <div className={`p-1.5 rounded-lg text-white font-bold shrink-0 ${
-                      sec.section_type === 'concept' ? 'bg-indigo-700' :
-                      sec.section_type === 'in_simple_words' ? 'bg-sky-700' :
-                      sec.section_type === 'real_world_application' ? 'bg-emerald-700' :
-                      sec.section_type === 'remember_tip' ? 'bg-amber-600' : 'bg-purple-700'
-                    }`}>
-                      {sec.section_type === 'concept' ? <BookOpen className="w-3.5 h-3.5" /> :
-                       sec.section_type === 'in_simple_words' ? <Lightbulb className="w-3.5 h-3.5" /> :
-                       sec.section_type === 'real_world_application' ? <Brain className="w-3.5 h-3.5" /> :
-                       sec.section_type === 'remember_tip' ? <Sparkles className="w-3.5 h-3.5" /> :
-                       <HelpCircle className="w-3.5 h-3.5" />}
-                    </div>
-                    <h2 className="text-base sm:text-xl font-bold font-serif text-stone-900 dark:text-stone-100">
-                      {sec.title}
-                    </h2>
-                  </div>
+            {/* Digital Textbook Reading Sheet */}
+            <div className="bg-[#fcfbf7] dark:bg-slate-900 border border-stone-300/80 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
+              {/* Textbook Page Decorative Left Margin Line */}
+              <div className="absolute left-4 sm:left-6 top-0 bottom-0 w-px bg-rose-300/40 dark:bg-rose-950/40 pointer-events-none" />
 
-                  {/* Section Body Text */}
-                  <div className="text-xs sm:text-sm text-stone-800 dark:text-stone-200 leading-relaxed whitespace-pre-wrap font-sans space-y-3">
-                    {sec.content}
-                  </div>
+              {/* Textbook Reading Content */}
+              <div className="space-y-8 pl-4 sm:pl-6">
+                {lesson.sections.map((sec, idx) => (
+                  <div 
+                    key={idx} 
+                    id={`section-${idx}`}
+                    className="space-y-4 pb-6 border-b border-stone-200/60 dark:border-slate-800/80 last:border-b-0 last:pb-0 scroll-mt-4"
+                  >
+                    {/* Section Title */}
+                    <div className="flex items-center gap-2.5">
+                      <div className={`p-1.5 rounded-lg text-white font-bold shrink-0 ${
+                        sec.section_type === 'concept' ? 'bg-indigo-700' :
+                        sec.section_type === 'in_simple_words' ? 'bg-sky-700' :
+                        sec.section_type === 'real_world_application' ? 'bg-emerald-700' :
+                        sec.section_type === 'remember_tip' ? 'bg-amber-600' : 'bg-purple-700'
+                      }`}>
+                        {sec.section_type === 'concept' ? <BookOpen className="w-3.5 h-3.5" /> :
+                         sec.section_type === 'in_simple_words' ? <Lightbulb className="w-3.5 h-3.5" /> :
+                         sec.section_type === 'real_world_application' ? <Brain className="w-3.5 h-3.5" /> :
+                         sec.section_type === 'remember_tip' ? <Sparkles className="w-3.5 h-3.5" /> :
+                         <HelpCircle className="w-3.5 h-3.5" />}
+                      </div>
+                      <h2 className="text-base sm:text-xl font-bold font-serif text-stone-900 dark:text-stone-100">
+                        {sec.title}
+                      </h2>
+                    </div>
+
+                    {/* Section Body Text with Rendered Highlights */}
+                    <div className="text-xs sm:text-sm text-stone-800 dark:text-stone-200 leading-relaxed whitespace-pre-wrap font-sans space-y-3">
+                      {renderHighlightedContent(sec.content, highlights)}
+                    </div>
 
                   {/* Bullet Points */}
                   {sec.bullet_points && sec.bullet_points.length > 0 && (
@@ -329,145 +475,9 @@ export const StudySpacePage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* BOTTOM SECTION: FOCUSED TAKE NOTES EDITOR BELOW LESSON */}
-        <div className="notebook-editor-area mt-8 bg-[#fcfbf7] dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-stone-300 dark:border-slate-800 shadow-xs space-y-4 relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-600" />
-          
-          <div className="flex items-center justify-between border-b border-stone-200 dark:border-slate-800 pb-3 pl-2">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-amber-800 dark:text-amber-400" />
-              <h3 className="text-sm font-bold text-stone-900 dark:text-white font-serif">
-                TAKE NOTES
-              </h3>
-            </div>
-            <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-              Write notes while studying
-            </span>
-          </div>
-
-          {noteSaveSuccess && (
-            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-600" />
-              <span>{noteSaveSuccess}</span>
-            </div>
-          )}
-
-          {/* Clean Note Editor Form */}
-          <form onSubmit={handleSaveLessonNote} className="space-y-3 pl-2">
-            <div>
-              <label className="block text-xs font-bold text-stone-700 dark:text-slate-300 mb-1">
-                Note Heading *
-              </label>
-              <input
-                type="text"
-                required
-                value={noteTitle}
-                onChange={(e) => setNoteTitle(e.target.value)}
-                placeholder="e.g. Acid definition and key derivations..."
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-stone-900 dark:text-white placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/25"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-stone-700 dark:text-slate-300 mb-1">
-                Personal Study Notes *
-              </label>
-              <textarea
-                required
-                rows={4}
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Write your personal notes while reading..."
-                className="w-full p-3.5 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl text-xs font-medium text-stone-900 dark:text-white placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/25 leading-relaxed font-sans"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-stone-500 font-medium">
-                Saved notes persist on /student/notebook
-              </span>
-              <div className="flex items-center gap-2">
-                {activeNoteId && (
-                  <button
-                    type="button"
-                    onClick={() => { setActiveNoteId(null); setNoteTitle(''); setNoteContent(''); }}
-                    className="px-3 py-1.5 text-xs font-bold text-stone-600 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={savingNote || !noteTitle.trim() || !noteContent.trim()}
-                  className="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{savingNote ? 'Saving...' : activeNoteId ? 'Update Note' : 'Save to Notebook'}</span>
-                </button>
-              </div>
-            </div>
-          </form>
-
-          {/* Saved Notes Confirmation List */}
-          {chapterNotes.length > 0 && (
-            <div className="pt-4 border-t border-stone-200 dark:border-slate-800 space-y-2 pl-2">
-              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
-                Saved Notes for this Chapter ({chapterNotes.length}):
-              </span>
-              <div className="space-y-2">
-                {chapterNotes.slice(0, 3).map((n) => (
-                  <div key={n.id} className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-stone-200 dark:border-slate-700 flex items-start justify-between gap-3 text-xs">
-                    <div>
-                      <h4 className="font-bold text-stone-900 dark:text-white">{n.title}</h4>
-                      <p className="text-[11px] text-stone-600 dark:text-slate-300 font-medium line-clamp-1">{n.content}</p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => handleEditNote(n)} className="p-1 text-stone-400 hover:text-amber-700"><Edit3 className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleDeleteNote(n.id)} className="p-1 text-stone-400 hover:text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Consolidate Practice Actions Bar */}
-        <div className="mt-6 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-stone-200 dark:border-slate-800 space-y-3">
-          <h3 className="text-xs font-bold text-stone-900 dark:text-white flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-600" />
-            Consolidate Chapter Practice
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button
-              onClick={() => navigate(`/student/quizzes?subject_id=${lesson.subject_id}&chapter_id=${lesson.chapter_id}`)}
-              className="p-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-            >
-              <CheckSquare className="w-4 h-4 text-sky-200" />
-              <span>Take Chapter Quiz</span>
-            </button>
-
-            <button
-              onClick={() => navigate(`/student/flashcards?subject_id=${lesson.subject_id}&chapter_id=${lesson.chapter_id}`)}
-              className="p-3 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-            >
-              <Flame className="w-4 h-4 text-amber-200" />
-              <span>Practice Flashcards</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/student/notebook')}
-              className="p-3 rounded-xl bg-stone-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-            >
-              <FileText className="w-4 h-4 text-amber-400" />
-              <span>View Full Notebook</span>
-            </button>
-          </div>
-        </div>
-      </InteractiveStudyWorkspace>
-    </div>
-  );
+      )}
+    </InteractiveStudyWorkspace>
+  </div>
+);
 };
 

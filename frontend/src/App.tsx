@@ -21,6 +21,7 @@ import { FlashcardsPage } from './pages/student/FlashcardsPage';
 import { QuizzesPage } from './pages/student/QuizzesPage';
 
 import { StudySpacePage } from './pages/student/StudySpacePage';
+import { StudySpaceLandingPage } from './pages/student/StudySpaceLandingPage';
 import { StudentClassSubjectsPage } from './pages/student/StudentClassSubjectsPage';
 import { AttendanceCatchUpPage } from './pages/student/AttendanceCatchUpPage';
 
@@ -29,7 +30,7 @@ import { TeacherDashboard } from './pages/teacher/TeacherDashboard';
 import { SubjectManagementPage } from './pages/teacher/SubjectManagementPage';
 import { ChapterModuleManagementPage } from './pages/teacher/ChapterModuleManagementPage';
 import { AskTeacherInboxPage } from './pages/teacher/AskTeacherInboxPage';
-import { DocumentManagementPage } from './pages/teacher/DocumentManagementPage';
+import { TeacherCurriculumPage } from './pages/teacher/TeacherCurriculumPage';
 import { DocumentReviewPage } from './pages/teacher/DocumentReviewPage';
 import { TeacherAnalyticsPage } from './pages/teacher/TeacherAnalyticsPage';
 import { AITeacherAssistantPage } from './pages/teacher/AITeacherAssistantPage';
@@ -108,6 +109,14 @@ export const App: React.FC = () => {
               element={
                 <LayoutShell>
                   <DiagnosticAssessmentPage />
+                </LayoutShell>
+              }
+            />
+            <Route
+              path="/student/study-space"
+              element={
+                <LayoutShell>
+                  <StudySpaceLandingPage />
                 </LayoutShell>
               }
             />
@@ -228,10 +237,18 @@ export const App: React.FC = () => {
               }
             />
             <Route
+              path="/teacher/curriculum"
+              element={
+                <LayoutShell>
+                  <TeacherCurriculumPage />
+                </LayoutShell>
+              }
+            />
+            <Route
               path="/teacher/documents"
               element={
                 <LayoutShell>
-                  <DocumentManagementPage />
+                  <TeacherCurriculumPage />
                 </LayoutShell>
               }
             />

@@ -118,10 +118,10 @@ export const StudentDashboard: React.FC = () => {
               </div>
 
               <button
-                onClick={() => navigate(`/student/study-space/${continueChapter.id}`)}
+                onClick={() => navigate('/student/study-space')}
                 className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
               >
-                <span>Continue Studying</span>
+                <span>Start Learning</span>
                 <ArrowRight className="w-4 h-4 text-sky-200" />
               </button>
             </div>

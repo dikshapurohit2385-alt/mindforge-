@@ -14,9 +14,19 @@ import {
   Send,
   Bot,
   PanelRightClose,
-  PanelRightOpen
+  PanelRightOpen,
+  PanelLeftClose,
+  PanelLeftOpen,
+  BookOpen,
+  Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+export interface SectionNavItem {
+  id?: string;
+  title: string;
+  section_type?: string;
+}
 
 interface InteractiveStudyWorkspaceProps {
   subjectId: string;
@@ -24,7 +34,10 @@ interface InteractiveStudyWorkspaceProps {
   moduleId?: string;
   chapterTitle?: string;
   subjectName?: string;
-  children: React.ReactNode;
+  sections?: SectionNavItem[];
+  headerElement?: React.ReactNode;
+  takeNotesElement?: React.ReactNode;
+  children: React.ReactNode | ((props: { highlights: TextHighlight[]; comments: TextComment[] }) => React.ReactNode);
 }
 
 interface ChatMessage {
@@ -43,10 +56,72 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
   moduleId,
   chapterTitle = 'Lesson',
   subjectName = 'Course',
-  children
+  sections = [],
+  headerElement,
+  children,
+  takeNotesElement
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Collapsible Left Sidebar State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Take Notes Panel Height State & Pointer Handling
+  const [notesHeight, setNotesHeight] = useState<number>(() => {
+    const saved = localStorage.getItem('study-space-notes-height');
+    if (saved) {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= 120 && parsed <= 600) {
+        return parsed;
+      }
+    }
+    return 220; // Default height in px
+  });
+
+  const isResizingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startHeightRef = useRef(0);
+
+  const handlePointerDownResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+
+    isResizingRef.current = true;
+    startYRef.current = e.clientY;
+    startHeightRef.current = notesHeight;
+    document.body.style.userSelect = 'none';
+  };
+
+  const handlePointerMoveResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isResizingRef.current) return;
+    e.preventDefault();
+
+    // Moving UP (current Y < start Y) -> deltaY is negative -> height increases
+    const deltaY = e.clientY - startYRef.current;
+    const rawHeight = startHeightRef.current - deltaY;
+
+    // Clamp between MIN_HEIGHT (120px) and MAX_HEIGHT (55% viewport height or max 550px)
+    const minHeight = 120;
+    const maxHeight = Math.min(window.innerHeight * 0.55, 550);
+    const clampedHeight = Math.max(minHeight, Math.min(rawHeight, maxHeight));
+
+    setNotesHeight(clampedHeight);
+  };
+
+  const handlePointerUpResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isResizingRef.current) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore if pointer capture release fails
+    }
+    isResizingRef.current = false;
+    document.body.style.userSelect = '';
+
+    localStorage.setItem('study-space-notes-height', notesHeight.toString());
+  };
 
   // Selection & Toolbar state
   const [selectedText, setSelectedText] = useState('');
@@ -338,104 +413,235 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
   };
 
   return (
-    <div ref={containerRef} onMouseUp={handleMouseUp} className="relative transition-all">
-      {/* 3-Part Study Workspace Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <div ref={containerRef} onMouseUp={handleMouseUp} className="relative flex-1 flex flex-col min-h-0 overflow-hidden w-full h-full">
+      
+      {/* 1. TOP HEADER (fixed height, shrink-0 row) */}
+      {headerElement && (
+        <div className="shrink-0 w-full z-20 border-b border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5">
+          {headerElement}
+        </div>
+      )}
+
+      {/* 2. WORKSPACE (flex-1 min-h-0 flex flex-row w-full overflow-hidden) */}
+      <div className="flex-1 min-h-0 flex flex-row w-full overflow-hidden relative">
         
-        {/* Left Column (68% width on desktop): Lesson Content + Bottom Notes */}
-        <div className={`transition-all duration-300 ${isAITutorOpen ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+        {/* A. LEFT SIDEBAR (Collapsible Chapter Navigation) */}
+        <aside 
+          className={`shrink-0 h-full flex flex-col min-h-0 border-r border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 ease-in-out z-10 ${
+            isSidebarOpen ? 'w-56 sm:w-60' : 'w-14'
+          }`}
+        >
+          {/* Sidebar Top Header Bar */}
+          <div className="shrink-0 p-3 border-b border-stone-200/80 dark:border-slate-800 flex items-center justify-between">
+            {isSidebarOpen ? (
+              <>
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <BookOpen className="w-4 h-4 text-indigo-600 dark:text-sky-400 shrink-0" />
+                  <span className="text-xs font-extrabold text-stone-900 dark:text-white uppercase tracking-wider truncate">
+                    Contents
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="Collapse Sidebar"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="w-full flex items-center justify-center p-1.5 rounded-lg text-stone-500 hover:text-indigo-600 dark:hover:text-sky-400 hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Expand Sidebar"
+              >
+                <PanelLeftOpen className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Sidebar Internal Scroll Content */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-3">
+            {isSidebarOpen ? (
+              /* Expanded Sidebar Content */
+              <div className="space-y-4">
+                {/* Active Lesson Info Pill */}
+                <div className="p-2.5 rounded-xl bg-indigo-50/70 dark:bg-slate-800/80 border border-indigo-100 dark:border-slate-700/80 text-xs">
+                  <span className="text-[10px] font-extrabold text-indigo-800 dark:text-sky-400 uppercase tracking-wider block mb-0.5">
+                    ACTIVE LESSON
+                  </span>
+                  <p className="font-bold text-stone-900 dark:text-white truncate">
+                    {chapterTitle}
+                  </p>
+                </div>
+
+                {/* Sections Quick Navigation List */}
+                {sections && sections.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-extrabold text-stone-400 dark:text-slate-500 uppercase tracking-wider px-2 block mb-1">
+                      SECTIONS ({sections.length})
+                    </span>
+                    {sections.map((sec, sIdx) => (
+                      <button
+                        key={sec.id || sIdx}
+                        onClick={() => {
+                          const el = document.getElementById(`section-${sIdx}`);
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }}
+                        className="w-full p-2 rounded-xl text-left text-xs font-semibold text-stone-700 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-sky-400 transition-colors flex items-center gap-2 group cursor-pointer"
+                      >
+                        <span className="w-5 h-5 rounded-md bg-stone-100 dark:bg-slate-800 group-hover:bg-indigo-600 group-hover:text-white text-stone-500 flex items-center justify-center text-[10px] font-bold shrink-0 transition-colors">
+                          {sIdx + 1}
+                        </span>
+                        <span className="truncate">{sec.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Collapsed Sidebar Icon Rail */
+              <div className="flex flex-col items-center gap-3 pt-2">
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="p-2.5 rounded-xl bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-sky-400 hover:bg-indigo-100 cursor-pointer transition-colors"
+                  title="Chapter Overview & Sections"
+                >
+                  <BookOpen className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="p-2.5 rounded-xl text-stone-500 hover:text-indigo-600 dark:hover:text-sky-400 hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                  title="View Lesson Sections"
+                >
+                  <Layers className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* B. MAIN COLUMN (Center Reading Area + Take Notes) */}
+        <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden p-3 gap-3 bg-stone-100/50 dark:bg-slate-950">
           
           {/* Header Toggle for AI Tutor when collapsed */}
           {!isAITutorOpen && (
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end shrink-0">
               <button
                 onClick={() => setIsAITutorOpen(true)}
-                className="px-4 py-2 bg-indigo-900 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-2 hover:bg-indigo-950 cursor-pointer"
+                className="px-3 py-1 bg-indigo-900 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 hover:bg-indigo-950 cursor-pointer"
               >
-                <PanelRightOpen className="w-4 h-4 text-sky-400" />
+                <PanelRightOpen className="w-3.5 h-3.5 text-sky-400" />
                 <span>Open AI Tutor</span>
               </button>
             </div>
           )}
 
-          {/* Lesson Content wrapped in lesson-reading-area class */}
-          <div className="lesson-reading-area space-y-6">
-            {children}
+          {/* Scrollable Lesson Reading Area */}
+          <div className="lesson-reading-area flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
+            {typeof children === 'function' ? children({ highlights, comments }) : children}
+
+            {/* Saved Highlights Summary */}
+            {highlights.length > 0 && (
+              <div className="mt-4 p-4 rounded-2xl bg-amber-50/70 dark:bg-slate-900/80 border border-amber-200 dark:border-slate-800 space-y-2">
+                <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider block">
+                  Saved Lesson Highlights ({highlights.length})
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {highlights.map(hl => (
+                    <div 
+                      key={hl.id} 
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 border ${
+                        hl.color === 'yellow' ? 'bg-amber-100 text-amber-900 border-amber-300' :
+                        hl.color === 'blue' ? 'bg-sky-100 text-sky-900 border-sky-300' :
+                        'bg-emerald-100 text-emerald-900 border-emerald-300'
+                      }`}
+                    >
+                      <span className="italic">"{hl.selected_text.slice(0, 35)}..."</span>
+                      <button 
+                        onClick={() => handleDeleteHighlight(hl.id)}
+                        className="text-stone-500 hover:text-rose-600 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Saved Comments List */}
+            {comments.length > 0 && (
+              <div className="mt-4 p-4 rounded-2xl bg-[#faf8f5] dark:bg-slate-900/80 border border-stone-200 dark:border-slate-800 space-y-3">
+                <span className="text-[11px] font-bold text-stone-700 dark:text-slate-300 uppercase tracking-wider block">
+                  Inline Lesson Comments ({comments.length})
+                </span>
+                <div className="space-y-2">
+                  {comments.map(cm => (
+                    <div key={cm.id} className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 space-y-1">
+                      <div className="flex items-center justify-between text-[11px] text-stone-500">
+                        <span className="italic font-mono text-indigo-700 dark:text-sky-400">"{cm.selected_text}"</span>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => { setEditingCommentId(cm.id); setEditCommentInput(cm.comment_text); }} className="p-1 text-stone-400 hover:text-indigo-600"><Edit2 className="w-3 h-3" /></button>
+                          <button onClick={() => handleDeleteComment(cm.id)} className="p-1 text-stone-400 hover:text-rose-600"><Trash2 className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      {editingCommentId === cm.id ? (
+                        <div className="flex items-center gap-2 pt-1">
+                          <input type="text" value={editCommentInput} onChange={(e) => setEditCommentInput(e.target.value)} className="w-full px-2 py-1 text-xs border rounded-md" />
+                          <button onClick={() => handleUpdateComment(cm.id)} className="px-2 py-1 bg-indigo-600 text-white rounded text-xs">Save</button>
+                        </div>
+                      ) : (
+                        <p className="text-xs font-semibold text-stone-900 dark:text-white">{cm.comment_text}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Saved Highlights Summary */}
-          {highlights.length > 0 && (
-            <div className="mt-6 p-4 rounded-2xl bg-amber-50/70 dark:bg-slate-900/80 border border-amber-200 dark:border-slate-800 space-y-2">
-              <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider block">
-                Saved Lesson Highlights ({highlights.length})
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {highlights.map(hl => (
-                  <div 
-                    key={hl.id} 
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 border ${
-                      hl.color === 'yellow' ? 'bg-amber-100 text-amber-900 border-amber-300' :
-                      hl.color === 'blue' ? 'bg-sky-100 text-sky-900 border-sky-300' :
-                      'bg-emerald-100 text-emerald-900 border-emerald-300'
-                    }`}
-                  >
-                    <span className="italic">"{hl.selected_text.slice(0, 35)}..."</span>
-                    <button 
-                      onClick={() => handleDeleteHighlight(hl.id)}
-                      className="text-stone-500 hover:text-rose-600 cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
+          {/* Resizable Bottom Take Notes Panel */}
+          {takeNotesElement && (
+            <div 
+              style={{ height: `${notesHeight}px` }} 
+              className="shrink-0 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-stone-200 dark:border-slate-800 shadow-sm overflow-hidden"
+            >
+              {/* TOP RESIZE HANDLE BAR */}
+              <div
+                onPointerDown={handlePointerDownResize}
+                onPointerMove={handlePointerMoveResize}
+                onPointerUp={handlePointerUpResize}
+                onPointerCancel={handlePointerUpResize}
+                className="h-3 shrink-0 bg-stone-100 dark:bg-slate-800 hover:bg-stone-200 dark:hover:bg-slate-700 active:bg-indigo-100 dark:active:bg-slate-700 cursor-ns-resize flex items-center justify-center transition-colors touch-none select-none z-10 border-b border-stone-200/60 dark:border-slate-700/60"
+                title="Drag up or down to resize Take Notes panel"
+              >
+                <div className="w-10 h-1 rounded-full bg-stone-300 dark:bg-slate-600 hover:bg-stone-400 dark:hover:bg-slate-500 transition-colors" />
               </div>
-            </div>
-          )}
 
-          {/* Saved Comments List */}
-          {comments.length > 0 && (
-            <div className="mt-4 p-4 rounded-2xl bg-[#faf8f5] dark:bg-slate-900/80 border border-stone-200 dark:border-slate-800 space-y-3">
-              <span className="text-[11px] font-bold text-stone-700 dark:text-slate-300 uppercase tracking-wider block">
-                Inline Lesson Comments ({comments.length})
-              </span>
-              <div className="space-y-2">
-                {comments.map(cm => (
-                  <div key={cm.id} className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-stone-500">
-                      <span className="italic font-mono text-indigo-700 dark:text-sky-400">"{cm.selected_text}"</span>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => { setEditingCommentId(cm.id); setEditCommentInput(cm.comment_text); }} className="p-1 text-stone-400 hover:text-indigo-600"><Edit2 className="w-3 h-3" /></button>
-                        <button onClick={() => handleDeleteComment(cm.id)} className="p-1 text-stone-400 hover:text-rose-600"><Trash2 className="w-3 h-3" /></button>
-                      </div>
-                    </div>
-                    {editingCommentId === cm.id ? (
-                      <div className="flex items-center gap-2 pt-1">
-                        <input type="text" value={editCommentInput} onChange={(e) => setEditCommentInput(e.target.value)} className="w-full px-2 py-1 text-xs border rounded-md" />
-                        <button onClick={() => handleUpdateComment(cm.id)} className="px-2 py-1 bg-indigo-600 text-white rounded text-xs">Save</button>
-                      </div>
-                    ) : (
-                      <p className="text-xs font-semibold text-stone-900 dark:text-white">{cm.comment_text}</p>
-                    )}
-                  </div>
-                ))}
+              {/* Inner Take Notes Content */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 flex flex-col">
+                {takeNotesElement}
               </div>
             </div>
           )}
         </div>
 
-        {/* Right Column (32% width on desktop): Persistent AI Tutor Panel */}
+        {/* C. RIGHT COLUMN: AI TUTOR PANEL */}
         {isAITutorOpen && (
-          <aside className="lg:col-span-4 ai-tutor-panel sticky top-20 bg-[#faf9f6] dark:bg-slate-900 rounded-3xl border border-indigo-200/80 dark:border-slate-800 shadow-md flex flex-col min-h-[580px] max-h-[82vh]">
+          <aside className="ai-tutor-panel w-full lg:w-[340px] xl:w-[380px] shrink-0 flex flex-col h-full min-h-0 overflow-hidden bg-[#faf9f6] dark:bg-slate-900 rounded-2xl border border-indigo-200/80 dark:border-slate-800 shadow-sm">
             
-            {/* AI Tutor Panel Header */}
-            <div className="p-4 border-b border-stone-200/80 dark:border-slate-800 flex items-center justify-between bg-stone-900 text-white rounded-t-3xl">
+            {/* AI Tutor Header */}
+            <div className="shrink-0 p-3.5 border-b border-stone-200/80 dark:border-slate-800 flex items-center justify-between bg-stone-900 text-white">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+                <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
                   <Bot className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold tracking-tight">AI Tutor</h3>
-                  <span className="text-[10px] text-sky-300 font-medium block truncate max-w-[180px]">
+                  <h3 className="text-xs font-bold tracking-tight">AI Tutor</h3>
+                  <span className="text-[10px] text-sky-300 font-medium block truncate max-w-[170px]">
                     {subjectName} • {chapterTitle}
                   </span>
                 </div>
@@ -443,7 +649,7 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
 
               <button
                 onClick={() => setIsAITutorOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
                 title="Collapse AI Tutor"
               >
                 <PanelRightClose className="w-4 h-4" />
@@ -556,7 +762,7 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
             exit={{ opacity: 0, y: 5, scale: 0.95 }}
             style={{
               position: 'absolute',
-              left: `${Math.max(120, Math.min(toolbarPos.x, 500))}px`,
+              left: `${Math.max(140, Math.min(toolbarPos.x, (containerRef.current?.clientWidth || 800) - 140))}px`,
               top: `${Math.max(10, toolbarPos.y)}px`,
               transform: 'translateX(-50%)'
             }}

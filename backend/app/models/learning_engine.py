@@ -94,29 +94,36 @@ class DiagnosticAssessment(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     student_id = Column(String, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     subject_id = Column(String, ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False, index=True)
+    chapter_id = Column(String, ForeignKey("chapters.id", ondelete="SET NULL"), nullable=True, index=True)
     total_score = Column(Integer, nullable=False)
     max_score = Column(Integer, nullable=False)
     percentage = Column(Float, nullable=False)
     assigned_level = Column(String, nullable=False) # BEGINNER, INTERMEDIATE, ADVANCED
     topic_results = Column(JSON, nullable=False) # list of { topic, status, score }
+    learner_profile = Column(JSON, nullable=True) # 9-signal profile dict
+    student_explanation = Column(Text, nullable=True) # Friendly student-facing explanation
     completed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     student = relationship("Student")
     subject = relationship("Subject")
+    chapter = relationship("Chapter")
 
 class DiagnosticQuestion(Base):
     __tablename__ = "diagnostic_questions"
 
     id = Column(String, primary_key=True, default=generate_uuid)
     subject_id = Column(String, ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False, index=True)
+    chapter_id = Column(String, ForeignKey("chapters.id", ondelete="SET NULL"), nullable=True, index=True)
+    question_type = Column(String, default="PRIOR_KNOWLEDGE", nullable=False) # PRIOR_KNOWLEDGE, DIFFICULTY_PERCEPTION, INTEREST_LEVEL, VISUAL_PREFERENCE, REAL_WORLD_INTEREST
     concept = Column(String(255), nullable=False)
     question = Column(Text, nullable=False)
     options = Column(JSON, nullable=False) # ["A", "B", "C", "D"]
-    correct_option_index = Column(Integer, nullable=False)
+    correct_option_index = Column(Integer, nullable=True) # Optional for preference questions
     difficulty = Column(String, default="MEDIUM", nullable=False)
     explanation = Column(Text, nullable=True)
 
     subject = relationship("Subject")
+    chapter = relationship("Chapter")
 
 # 4. Quizzes & Attempts
 class Quiz(Base):

@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # Default to sqlite file if postgresql is not provided
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./onepath_ai.db")
     
+    # AI Integration
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:5173",

@@ -11,8 +11,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_210_CREATED if hasattr(status, 'HTTP_210_CREATED') else status.HTTP_201_CREATED)
 def register(user_in: UserRegister, db: Session = Depends(get_db)):
+    clean_email = user_in.email.lower().strip()
     # Check existing email
-    existing_user = db.query(User).filter(User.email == user_in.email).first()
+    existing_user = db.query(User).filter(User.email == clean_email).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -22,8 +23,8 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
     # Create user
     hashed_pwd = get_password_hash(user_in.password)
     new_user = User(
-        name=user_in.name,
-        email=user_in.email,
+        name=user_in.name.strip(),
+        email=clean_email,
         password_hash=hashed_pwd,
         role=user_in.role
     )
@@ -45,7 +46,8 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 def login(login_data: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == login_data.email).first()
+    clean_email = login_data.email.lower().strip()
+    user = db.query(User).filter(User.email == clean_email).first()
     if not user or not verify_password(login_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

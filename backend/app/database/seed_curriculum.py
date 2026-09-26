@@ -1,7 +1,7 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from sqlalchemy.orm import Session
 from app.models.user import User, Teacher, Student, UserRole
-from app.models.academic import Subject, Chapter, Module
+from app.models.academic import Subject, Chapter, Module, SchoolClass, AttendanceRecord, AttendanceStatus
 from app.models.learning_engine import (
     DiagnosticQuestion,
     Quiz,
@@ -15,14 +15,30 @@ from app.models.learning_engine import (
 
 def seed_sample_curriculum(db: Session):
     """
-    Populates sample curriculum, knowledge graphs, diagnostic tests, quizzes,
-    and flashcards if the database is unpopulated.
+    Populates sample curriculum hierarchy (Class 6 - 10), subjects, knowledge graphs,
+    diagnostic tests, quizzes, flashcards, and attendance logs.
     """
-    existing_subject = db.query(Subject).first()
-    if existing_subject:
-        return  # Already seeded or has data
+    # 1. Seed School Classes
+    classes_spec = [
+        {"name": "Class 6", "grade": 6},
+        {"name": "Class 7", "grade": 7},
+        {"name": "Class 8", "grade": 8},
+        {"name": "Class 9", "grade": 9},
+        {"name": "Class 10", "grade": 10},
+    ]
 
-    # Find or create a default Teacher
+    classes_map = {}
+    for cspec in classes_spec:
+        sc = db.query(SchoolClass).filter(SchoolClass.name == cspec["name"]).first()
+        if not sc:
+            sc = SchoolClass(name=cspec["name"], grade_level=cspec["grade"])
+            db.add(sc)
+            db.flush()
+        classes_map[cspec["name"]] = sc
+
+    db.commit()
+
+    # Find or verify teacher & student
     teacher_user = db.query(User).filter(User.role == UserRole.TEACHER).first()
     if not teacher_user:
         return
@@ -30,58 +46,97 @@ def seed_sample_curriculum(db: Session):
     if not teacher_profile:
         return
 
-    print("[MindForge] Seeding initial curriculum and adaptive engine data...")
+    student_user = db.query(User).filter(User.role == UserRole.STUDENT).first()
+    student_profile = db.query(Student).filter(Student.user_id == student_user.id).first() if student_user else None
 
-    # 1. Create Subject: Python Programming & Machine Learning
-    subj = Subject(
-        name="Python & Machine Learning",
-        description="Foundational curriculum covering Python syntax, data processing, statistics, and machine learning models.",
-        teacher_id=teacher_profile.id
+    # Check if subjects already exist
+    existing_subject = db.query(Subject).first()
+    if existing_subject:
+        # Check if subject class_id is missing and associate it
+        c9 = classes_map.get("Class 9")
+        if c9:
+            subs = db.query(Subject).all()
+            for s in subs:
+                if not s.class_id:
+                    s.class_id = c9.id
+                    s.class_name = c9.name
+            db.commit()
+        return
+
+    print("[MindForge] Seeding Class 6 - 10 curriculum structure and attendance data...")
+
+    # Class 9 Subjects & Chapters
+    c9 = classes_map["Class 9"]
+    c10 = classes_map["Class 10"]
+
+    # Subject 1: Class 9 Science
+    c9_sci = Subject(
+        name="Science (Class 9)",
+        description="NCERT Class 9 Science covering Matter, Atoms, Molecules, Structure of the Atom, and Motion.",
+        teacher_id=teacher_profile.id,
+        class_id=c9.id,
+        class_name=c9.name
     )
-    db.add(subj)
+    db.add(c9_sci)
+
+    # Subject 2: Class 9 Mathematics
+    c9_math = Subject(
+        name="Mathematics (Class 9)",
+        description="NCERT Class 9 Mathematics covering Number Systems, Polynomials, Coordinate Geometry, and Triangles.",
+        teacher_id=teacher_profile.id,
+        class_id=c9.id,
+        class_name=c9.name
+    )
+    db.add(c9_math)
+
+    # Subject 3: Class 10 Science
+    c10_sci = Subject(
+        name="Science (Class 10)",
+        description="NCERT Class 10 Science covering Chemical Reactions, Acids, Bases and Salts, and Life Processes.",
+        teacher_id=teacher_profile.id,
+        class_id=c10.id,
+        class_name=c10.name
+    )
+    db.add(c10_sci)
+
     db.flush()
 
-    # Chapters & Modules
-    chapters_data = [
+    # Chapters for Class 9 Science
+    sci_chaps = [
         {
-            "title": "Python Essentials",
-            "desc": "Foundational programming constructs in Python",
-            "order": 1,
+            "title": "Structure of the Atom",
+            "desc": "Subatomic particles, Thomson model, Rutherford nuclear model, and Bohr planetary model.",
             "modules": [
-                {"title": "Python Revision", "desc": "Syntax, variables, conditionals and data structures.", "order": 1},
-                {"title": "Loops & Iteration", "desc": "For loops, while loops, comprehension and control flow.", "order": 2},
-                {"title": "Functions & Scope", "desc": "Function arguments, recursion, decorators, and variable scope.", "order": 3}
+                {"title": "Subatomic Particles (Protons, Neutrons, Electrons)", "desc": "Discovery, charge, and mass relationships.", "order": 1},
+                {"title": "Atomic Models (Rutherford & Bohr)", "desc": "Alpha scattering experiment and energy orbits.", "order": 2},
+                {"title": "Valency & Atomic Number", "desc": "Electronic configurations and octet stability.", "order": 3}
             ]
         },
         {
-            "title": "Data Processing & Mathematics",
-            "desc": "NumPy, Pandas, and foundational statistical reasoning",
-            "order": 2,
+            "title": "Matter in Our Surroundings",
+            "desc": "Physical nature of matter, states of matter, and latent heat of vaporization.",
             "modules": [
-                {"title": "NumPy Basics", "desc": "N-dimensional arrays, vectorization, and matrix operations.", "order": 1},
-                {"title": "Pandas DataFrames", "desc": "Tabular manipulation, missing data handling, and aggregation.", "order": 2},
-                {"title": "Statistics & Probability", "desc": "Distributions, hypothesis testing, mean, variance, covariance.", "order": 3}
+                {"title": "States of Matter & Particle Theory", "desc": "Solids, liquids, gases, and kinetic energy.", "order": 1},
+                {"title": "Evaporation & Latent Heat", "desc": "Cooling effect of evaporation and phase transitions.", "order": 2}
             ]
         },
         {
-            "title": "Machine Learning Foundations",
-            "desc": "Supervised learning algorithms and evaluation metrics",
-            "order": 3,
+            "title": "Atoms and Molecules",
+            "desc": "Laws of chemical combination, Dalton's atomic theory, and chemical formulae.",
             "modules": [
-                {"title": "Linear Regression", "desc": "Cost functions, gradient descent, and ordinary least squares.", "order": 1},
-                {"title": "Classification Models", "desc": "Logistic regression, decision trees, and boundary surfaces.", "order": 2},
-                {"title": "Model Evaluation", "desc": "Cross-validation, precision, recall, F1-score, and ROC-AUC.", "order": 3}
+                {"title": "Laws of Chemical Combination", "desc": "Conservation of mass and definite proportions.", "order": 1},
+                {"title": "Mole Concept & Formula Mass", "desc": "Avogadro's constant and molar calculations.", "order": 2}
             ]
         }
     ]
 
-    all_modules = []
-    for c_data in chapters_data:
+    all_sci_mods = []
+    for idx, c_data in enumerate(sci_chaps):
         chap = Chapter(
-            subject_id=subj.id,
+            subject_id=c9_sci.id,
             title=c_data["title"],
             description=c_data["desc"],
-            order_index=c_data["order"]
+            order_index=idx + 1
         )
         db.add(chap)
         db.flush()
@@ -95,15 +150,14 @@ def seed_sample_curriculum(db: Session):
             )
             db.add(mod)
             db.flush()
-            all_modules.append(mod)
+            all_sci_mods.append(mod)
 
-    # 2. Knowledge Graph Nodes & Prerequisite Edges
-    # Python -> Loops -> Functions -> NumPy -> Pandas -> Statistics -> Linear Regression -> Classification -> Model Evaluation
+    # Seed Knowledge Nodes & Edges for Class 9 Science
     nodes = []
-    for idx, mod in enumerate(all_modules):
-        diff = "BEGINNER" if idx < 3 else ("INTERMEDIATE" if idx < 6 else "ADVANCED")
+    for idx, mod in enumerate(all_sci_mods):
+        diff = "BEGINNER" if idx < 2 else ("INTERMEDIATE" if idx < 5 else "ADVANCED")
         kn = KnowledgeNode(
-            subject_id=subj.id,
+            subject_id=c9_sci.id,
             module_id=mod.id,
             name=mod.title,
             description=mod.description,
@@ -114,23 +168,7 @@ def seed_sample_curriculum(db: Session):
         db.flush()
         nodes.append(kn)
 
-    # Define prerequisite relationships
-    # Python Revision -> Loops & Iteration
-    # Loops & Iteration -> Functions & Scope
-    # Functions & Scope -> NumPy Basics
-    # NumPy Basics -> Pandas DataFrames
-    # Python Revision + Statistics -> Linear Regression
-    edges_spec = [
-        (0, 1), # Python Revision -> Loops
-        (1, 2), # Loops -> Functions
-        (2, 3), # Functions -> NumPy
-        (3, 4), # NumPy -> Pandas
-        (4, 5), # Pandas -> Statistics
-        (3, 6), # NumPy -> Linear Regression
-        (5, 6), # Statistics -> Linear Regression (Requires Statistics!)
-        (6, 7), # Linear Regression -> Classification
-        (7, 8)  # Classification -> Model Evaluation
-    ]
+    edges_spec = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]
     for src_idx, tgt_idx in edges_spec:
         edge = KnowledgeEdge(
             source_node_id=nodes[src_idx].id,
@@ -139,67 +177,49 @@ def seed_sample_curriculum(db: Session):
         )
         db.add(edge)
 
-    # 3. Diagnostic Questions
+    # Seed Diagnostic Questions for Class 9 Science
     diag_seeds = [
         {
-            "concept": "Python Basics",
-            "q": "What is the result of type([1, 2, 3]) in Python?",
-            "opts": ["<class 'list'>", "<class 'array'>", "<class 'tuple'>", "<class 'vector'>"],
+            "concept": "Subatomic Particles",
+            "q": "Which subatomic particle carries a negative electric charge?",
+            "opts": ["Electron", "Proton", "Neutron", "Alpha Particle"],
             "ans": 0,
             "diff": "EASY",
-            "exp": "Square brackets [ ] define standard mutable list objects in Python."
+            "exp": "Electrons are negatively charged subatomic particles orbiting the atomic nucleus."
         },
         {
-            "concept": "Loops",
-            "q": "Which keyword immediately exits a loop regardless of the test condition?",
-            "opts": ["continue", "break", "pass", "yield"],
-            "ans": 1,
-            "diff": "EASY",
-            "exp": "The break statement terminates the enclosing loop execution immediately."
-        },
-        {
-            "concept": "Functions",
-            "q": "What is a lambda function in Python?",
+            "concept": "Atomic Models",
+            "q": "What did Rutherford's gold foil experiment demonstrate about the structure of an atom?",
             "opts": [
-                "A multithreaded asynchronous function",
-                "An anonymous inline function defined with the lambda keyword",
-                "A built-in mathematical library",
-                "A compiler optimization flag"
+                "The atom is a solid uniform sphere of positive charge",
+                "Most of the atom is empty space with a dense positive nucleus",
+                "Electrons are stationary at fixed positions",
+                "Neutrons are the only subatomic particles present"
             ],
             "ans": 1,
             "diff": "MEDIUM",
-            "exp": "Lambdas are anonymous single-expression functions."
+            "exp": "The deflection of alpha particles showed that mass and positive charge are concentrated in a tiny central nucleus."
         },
         {
-            "concept": "NumPy & Vectors",
-            "q": "What is array broadcasting in NumPy?",
-            "opts": [
-                "Transmitting array data over local network sockets",
-                "Arithmetic operations between arrays of different compatible shapes without copying data",
-                "Printing arrays onto standard terminal streams",
-                "Converting arrays into JSON format"
-            ],
-            "ans": 1,
-            "diff": "MEDIUM",
-            "exp": "Broadcasting describes how NumPy treats arrays with different shapes during arithmetic operations."
-        },
-        {
-            "concept": "Statistics & Calculus",
-            "q": "What does the gradient vector indicate in gradient descent optimization?",
-            "opts": [
-                "The direction of steepest ascent of the loss function",
-                "The average execution time of the CPU",
-                "The maximum memory address allocated",
-                "The number of features in the dataset"
-            ],
+            "concept": "Valency",
+            "q": "What is the maximum number of electrons that can be accommodated in the innermost K-shell of an atom?",
+            "opts": ["2", "8", "18", "32"],
             "ans": 0,
-            "diff": "HARD",
-            "exp": "The gradient points in the direction of steepest increase; gradient descent takes steps in the opposite direction."
+            "diff": "EASY",
+            "exp": "According to Bohr-Bury scheme 2n^2, for n=1 (K-shell) max capacity is 2(1)^2 = 2 electrons."
+        },
+        {
+            "concept": "Mole Concept",
+            "q": "What is the numerical value of Avogadro's constant?",
+            "opts": ["6.022 x 10^23", "3.00 x 10^8", "1.602 x 10^-19", "9.81 x 10^3"],
+            "ans": 0,
+            "diff": "MEDIUM",
+            "exp": "One mole of any substance contains exactly 6.022 x 10^23 representative particles."
         }
     ]
     for d in diag_seeds:
         dq = DiagnosticQuestion(
-            subject_id=subj.id,
+            subject_id=c9_sci.id,
             concept=d["concept"],
             question=d["q"],
             options=d["opts"],
@@ -209,11 +229,11 @@ def seed_sample_curriculum(db: Session):
         )
         db.add(dq)
 
-    # 4. Sample Dynamic Quiz
+    # Seed Quiz for Class 9 Science
     quiz = Quiz(
-        title="Formative Check: Python & NumPy Basics",
-        subject_id=subj.id,
-        module_id=all_modules[0].id,
+        title="Formative Check: Atomic Structure & Valency",
+        subject_id=c9_sci.id,
+        module_id=all_sci_mods[0].id,
         difficulty="MEDIUM",
         is_ai_generated=False,
         is_published=True,
@@ -222,43 +242,25 @@ def seed_sample_curriculum(db: Session):
     db.add(quiz)
     db.flush()
 
-    quiz_qs = [
+    qq_list = [
         {
-            "q": "Which data structure is immutable in Python?",
-            "opts": ["Dictionary", "List", "Tuple", "Set"],
-            "ans": 2,
-            "exp": "Tuples cannot be altered once instantiated.",
-            "concept": "Python Basics",
+            "q": "What is the mass of a neutron relative to a proton?",
+            "opts": ["Approximately equal (1 amu)", "Half the mass", "Negligible (1/1836 amu)", "Twice the mass"],
+            "ans": 0,
+            "exp": "Protons and neutrons both have a relative mass of approximately 1 atomic mass unit.",
+            "concept": "Subatomic Particles",
             "diff": "EASY"
         },
         {
-            "q": "What does np.zeros((3, 4)) generate?",
-            "opts": [
-                "A 1D array with 12 elements",
-                "A 3x4 2-dimensional matrix filled with 0.0 values",
-                "A dictionary containing 3 keys and 4 values",
-                "An empty list"
-            ],
-            "ans": 1,
-            "exp": "np.zeros creates a NumPy array with the specified shape initialized to floating-point zeros.",
-            "concept": "NumPy & Vectors",
-            "diff": "EASY"
-        },
-        {
-            "q": "What does a negative index like lst[-1] retrieve in Python?",
-            "opts": [
-                "The first element of the list",
-                "The last element of the list",
-                "An IndexError",
-                "A reversed copy of the entire list"
-            ],
-            "ans": 1,
-            "exp": "Negative indexing in Python counts backward from the end of the collection.",
-            "concept": "Python Basics",
-            "diff": "EASY"
+            "q": "An element has atomic number 11 (Sodium). What is its electronic configuration?",
+            "opts": ["2, 8, 1", "2, 9", "8, 3", "2, 2, 7"],
+            "ans": 0,
+            "exp": "K-shell=2, L-shell=8, M-shell=1 (total 11 electrons).",
+            "concept": "Valency",
+            "diff": "MEDIUM"
         }
     ]
-    for q in quiz_qs:
+    for q in qq_list:
         qq = QuizQuestion(
             quiz_id=quiz.id,
             question=q["q"],
@@ -270,37 +272,25 @@ def seed_sample_curriculum(db: Session):
         )
         db.add(qq)
 
-    # 5. Flashcards
-    flashcard_seeds = [
+    # Seed Flashcards
+    fc_list = [
         {
-            "q": "What is the computational complexity of indexing an element in a Python list?",
-            "a": "O(1) constant time, because lists are implemented as contiguous arrays of pointers.",
-            "tag": "Python Basics",
+            "q": "What defines the atomic number of an element?",
+            "a": "The total number of protons present in the nucleus of its atom.",
+            "tag": "Subatomic Particles",
             "diff": "EASY"
         },
         {
-            "q": "How does NumPy achieve significantly faster execution than native Python loops?",
-            "a": "NumPy operations run in compiled C with contiguous memory buffers and SIMD vectorization.",
-            "tag": "NumPy & Vectors",
+            "q": "How is valency determined for an element with 6 valence electrons?",
+            "a": "Valency = 8 - 6 = 2 (it needs 2 electrons to achieve octet stability).",
+            "tag": "Valency",
             "diff": "MEDIUM"
-        },
-        {
-            "q": "What is the difference between Mean Squared Error (MSE) and Mean Absolute Error (MAE)?",
-            "a": "MSE squares errors penalizing large outliers more severely, whereas MAE weights all deviations linearly.",
-            "tag": "Linear Regression",
-            "diff": "MEDIUM"
-        },
-        {
-            "q": "Why is feature scaling critical prior to training gradient-descent based algorithms?",
-            "a": "Disparate feature scales distort the loss surface into elongated ellipses, slowing convergence.",
-            "tag": "Linear Regression",
-            "diff": "HARD"
         }
     ]
-    for fc in flashcard_seeds:
+    for fc in fc_list:
         card = Flashcard(
-            subject_id=subj.id,
-            module_id=all_modules[0].id,
+            subject_id=c9_sci.id,
+            module_id=all_sci_mods[0].id,
             front_question=fc["q"],
             back_answer=fc["a"],
             concept_tag=fc["tag"],
@@ -309,5 +299,34 @@ def seed_sample_curriculum(db: Session):
         )
         db.add(card)
 
+    # Seed Sample Attendance Logs for Student
+    if student_profile:
+        today = date.today()
+        # Seed 15 sessions for Science (some Present, some Absent -> ~60% attendance)
+        for i in range(15):
+            past_date = today - timedelta(days=(i * 2))
+            st_val = AttendanceStatus.PRESENT if (i % 3 != 0) else AttendanceStatus.ABSENT
+            rec = AttendanceRecord(
+                student_id=student_profile.id,
+                class_id=c9.id,
+                subject_id=c9_sci.id,
+                date=past_date,
+                status=st_val
+            )
+            db.add(rec)
+
+        # Seed Mathematics attendance (~85%)
+        for i in range(12):
+            past_date = today - timedelta(days=(i * 2))
+            st_val = AttendanceStatus.PRESENT if (i % 6 != 0) else AttendanceStatus.ABSENT
+            rec = AttendanceRecord(
+                student_id=student_profile.id,
+                class_id=c9.id,
+                subject_id=c9_math.id,
+                date=past_date,
+                status=st_val
+            )
+            db.add(rec)
+
     db.commit()
-    print(f"[MindForge] Successfully seeded subject '{subj.name}' with {len(all_modules)} modules, knowledge graph, diagnostic questions, quizzes, and flashcards.")
+    print("[MindForge] Successfully seeded Class 6 - 10 curriculum, Class 9 Science, Math, and Attendance records!")

@@ -15,8 +15,8 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full azure-card border-b border-sky-200/80 dark:border-sky-900/60 px-6 py-3.5 transition-all">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
+    <header className="sticky top-0 z-30 w-full azure-card border-b border-sky-200/80 dark:border-sky-900/60 px-4 py-3 transition-all">
+      <div className="flex items-center justify-between w-full">
         {/* Brand Logo */}
         <div 
           onClick={() => navigate(user?.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard')}

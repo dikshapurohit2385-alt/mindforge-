@@ -12,11 +12,28 @@ from app.schemas.learning_engine import (
     AdaptiveExplainIn,
     AdaptiveExplainOut,
     GenerateNotesIn,
-    PersonalizedNoteOut
+    PersonalizedNoteOut,
+    ChapterAdaptiveLessonOut
 )
 from app.services.adaptive_learning_service import adaptive_learning_service
 
 router = APIRouter(prefix="/adaptive-content", tags=["adaptive-content"])
+
+@router.get("/chapter/{chapter_id}/lesson", response_model=ChapterAdaptiveLessonOut)
+async def get_chapter_adaptive_lesson(
+    chapter_id: str,
+    db: Session = Depends(get_db),
+    current_student: Student = Depends(get_current_student)
+):
+    try:
+        lesson = await adaptive_learning_service.generate_chapter_adaptive_lesson(
+            student_id=current_student.id,
+            chapter_id=chapter_id,
+            db=db
+        )
+        return lesson
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/explain", response_model=AdaptiveExplainOut)
 async def get_adaptive_explanation(

@@ -42,13 +42,18 @@ class Student(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     institution_id = Column(String, ForeignKey("institutions.id", ondelete="SET NULL"), nullable=True)
+    class_id = Column(String, ForeignKey("school_classes.id", ondelete="SET NULL"), nullable=True)
     class_name = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="student_profile")
     institution = relationship("Institution", back_populates="students")
+    school_class = relationship("SchoolClass", back_populates="students")
     notes = relationship("StudentNote", back_populates="student", cascade="all, delete-orphan")
     questions = relationship("AskTeacherQuestion", back_populates="student", cascade="all, delete-orphan")
+    attendance_records = relationship("AttendanceRecord", back_populates="student", cascade="all, delete-orphan")
+    highlights = relationship("TextHighlight", back_populates="student", cascade="all, delete-orphan")
+    comments = relationship("TextComment", back_populates="student", cascade="all, delete-orphan")
 
 class Teacher(Base):
     __tablename__ = "teachers"

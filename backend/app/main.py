@@ -9,12 +9,39 @@ from app.database.base import Base
 import app.models  # noqa
 from app.database.seed_curriculum import seed_sample_curriculum
 
+from sqlalchemy import inspect, text
+
+def ensure_schema_up_to_date(bind_engine):
+    """Ensures existing SQLite tables receive newly added columns when upgrading schema."""
+    try:
+        inspector = inspect(bind_engine)
+        table_names = inspector.get_table_names()
+        migrations = [
+            ("students", "class_id", "VARCHAR"),
+            ("subjects", "class_id", "VARCHAR"),
+            ("subjects", "class_name", "VARCHAR(100)"),
+            ("ask_teacher_questions", "chapter_id", "VARCHAR"),
+            ("ask_teacher_questions", "module_id", "VARCHAR"),
+            ("ask_teacher_questions", "selected_text", "TEXT"),
+        ]
+        with bind_engine.begin() as conn:
+            for table_name, col_name, col_type in migrations:
+                if table_name in table_names:
+                    existing_cols = [c['name'] for c in inspector.get_columns(table_name)]
+                    if col_name not in existing_cols:
+                        print(f"[Auto-Migration] Adding missing column '{col_name}' to table '{table_name}'")
+                        conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}"))
+    except Exception as e:
+        print(f"[Auto-Migration Warning]: {e}")
+
 # Create tables if not using Alembic CLI directly
 Base.metadata.create_all(bind=engine)
+ensure_schema_up_to_date(engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: ensure tables & sample curriculum data exist
+    # Startup: ensure schema & sample curriculum data exist
+    ensure_schema_up_to_date(engine)
     db = SessionLocal()
     try:
         seed_sample_curriculum(db)
@@ -60,7 +87,10 @@ from app.api import (
     rag,
     knowledge_graph,
     recommendations,
-    teacher_analytics
+    teacher_analytics,
+    classes,
+    attendance,
+    study_workspace
 )
 
 # Existing Phase 1 & 2 Routers
@@ -84,6 +114,11 @@ app.include_router(rag.router, prefix=settings.API_V1_STR)
 app.include_router(knowledge_graph.router, prefix=settings.API_V1_STR)
 app.include_router(recommendations.router, prefix=settings.API_V1_STR)
 app.include_router(teacher_analytics.router, prefix=settings.API_V1_STR)
+
+# Phase 7 School Class, Attendance & Study Workspace Routers
+app.include_router(classes.router, prefix=settings.API_V1_STR)
+app.include_router(attendance.router, prefix=settings.API_V1_STR)
+app.include_router(study_workspace.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

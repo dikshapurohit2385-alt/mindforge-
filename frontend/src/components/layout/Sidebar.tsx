@@ -12,7 +12,6 @@ import {
   CheckSquare,
   Flame,
   Wand2,
-  School,
   UserCheck
 } from 'lucide-react';
 
@@ -22,9 +21,9 @@ export const Sidebar: React.FC = () => {
 
   const studentLinks = [
     { name: 'Dashboard', to: '/student/dashboard', icon: LayoutDashboard },
-    { name: 'Class & Attendance', to: '/student/my-class', icon: School },
+    { name: 'Study Space', to: '/student/study-space', icon: Compass },
     { name: 'My Subjects', to: '/student/subjects', icon: BookOpen },
-    { name: 'Adaptive Learning Path', to: '/student/learning-path', icon: Compass },
+    { name: 'Adaptive Learning Path', to: '/student/learning-path', icon: Layers },
     { name: 'Quizzes & Practice', to: '/student/quizzes', icon: CheckSquare },
     { name: 'Flashcards & Revision', to: '/student/flashcards', icon: Flame },
     { name: 'Digital Notebook', to: '/student/notebook', icon: FileText },
@@ -33,9 +32,9 @@ export const Sidebar: React.FC = () => {
 
   const teacherLinks = [
     { name: 'Dashboard', to: '/teacher/dashboard', icon: LayoutDashboard },
+    { name: 'Curriculum', to: '/teacher/curriculum', icon: Layers },
     { name: 'Attendance Management', to: '/teacher/attendance', icon: UserCheck },
     { name: 'Subject Management', to: '/teacher/subjects', icon: BookOpen },
-    { name: 'Curriculum Documents', to: '/teacher/documents', icon: Layers },
     { name: 'Student Analytics', to: '/teacher/analytics', icon: BarChart3 },
     { name: 'AI Assistant Studio', to: '/teacher/ai-assistant', icon: Wand2 },
     { name: 'Student Questions', to: '/teacher/questions', icon: MessageSquare },
@@ -44,7 +43,7 @@ export const Sidebar: React.FC = () => {
   const links = isTeacher ? teacherLinks : studentLinks;
 
   return (
-    <aside className="w-64 shrink-0 azure-card rounded-2xl p-4 my-6 ml-6 border border-sky-200/80 dark:border-sky-900/60 flex flex-col justify-between hidden md:flex min-h-[calc(100vh-6.5rem)] transition-all">
+    <aside className="w-64 shrink-0 azure-card rounded-2xl p-4 my-3 ml-3 sm:my-4 sm:ml-4 border border-sky-200/80 dark:border-sky-900/60 flex flex-col justify-between hidden md:flex overflow-y-auto transition-all">
       <div>
         <div className="px-3 py-2 mb-3">
           <span className="text-xs font-extrabold text-sky-800 dark:text-sky-300 uppercase tracking-widest block">

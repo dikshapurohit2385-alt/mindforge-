@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.core.deps import get_db, get_current_user, get_current_student, get_current_teacher
 from app.models.user import User, Student, Teacher
@@ -37,6 +37,7 @@ def format_question_out(q: AskTeacherQuestion) -> QuestionOut:
         answered_at=q.answered_at
     )
 
+@router.post("/questions", response_model=QuestionOut, status_code=status.HTTP_201_CREATED)
 @router.post("", response_model=QuestionOut, status_code=status.HTTP_201_CREATED)
 def submit_question(
     q_in: QuestionCreate,
@@ -47,7 +48,6 @@ def submit_question(
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
 
-    # Automatically assign to subject's teacher
     teacher_id = subject.teacher_id
 
     question = AskTeacherQuestion(
@@ -65,6 +65,7 @@ def submit_question(
     db.refresh(question)
     return format_question_out(question)
 
+@router.get("/my-questions", response_model=List[QuestionOut])
 @router.get("/student", response_model=List[QuestionOut])
 def get_student_questions(
     db: Session = Depends(get_db),
@@ -75,16 +76,29 @@ def get_student_questions(
     ).order_by(AskTeacherQuestion.created_at.desc()).all()
     return [format_question_out(q) for q in questions]
 
+@router.get("/inbox", response_model=List[QuestionOut])
 @router.get("/teacher", response_model=List[QuestionOut])
 def get_teacher_questions(
+    status_filter: Optional[str] = None,
+    subject_id: Optional[str] = None,
     db: Session = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher)
 ):
-    questions = db.query(AskTeacherQuestion).filter(
+    query = db.query(AskTeacherQuestion).filter(
         AskTeacherQuestion.teacher_id == current_teacher.id
-    ).order_by(AskTeacherQuestion.created_at.desc()).all()
+    )
+    if status_filter and status_filter.upper() != "ALL":
+        if status_filter.upper() == "OPEN" or status_filter.upper() == "PENDING":
+            query = query.filter(AskTeacherQuestion.status == QuestionStatus.PENDING)
+        elif status_filter.upper() == "ANSWERED":
+            query = query.filter(AskTeacherQuestion.status == QuestionStatus.ANSWERED)
+    if subject_id:
+        query = query.filter(AskTeacherQuestion.subject_id == subject_id)
+
+    questions = query.order_by(AskTeacherQuestion.created_at.desc()).all()
     return [format_question_out(q) for q in questions]
 
+@router.put("/questions/{id}/answer", response_model=QuestionOut)
 @router.post("/{id}/answer", response_model=QuestionOut)
 def answer_question(
     id: str,
@@ -103,6 +117,25 @@ def answer_question(
     question.status = answer_in.status or QuestionStatus.ANSWERED
     question.answered_at = datetime.now(timezone.utc)
 
+    db.commit()
+    db.refresh(question)
+    return format_question_out(question)
+
+@router.put("/questions/{id}/status", response_model=QuestionOut)
+def update_question_status(
+    id: str,
+    new_status: QuestionStatus,
+    db: Session = Depends(get_db),
+    current_teacher: Teacher = Depends(get_current_teacher)
+):
+    question = db.query(AskTeacherQuestion).filter(
+        AskTeacherQuestion.id == id,
+        AskTeacherQuestion.teacher_id == current_teacher.id
+    ).first()
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    question.status = new_status
     db.commit()
     db.refresh(question)
     return format_question_out(question)

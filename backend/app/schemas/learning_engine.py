@@ -46,6 +46,15 @@ class DiagnosticQuestionOut(BaseModel):
     question: str
     options: List[str]
     difficulty: str
+    question_type: str = "PRIOR_KNOWLEDGE"
+
+class ChapterDiagnosticQuestionOut(BaseModel):
+    id: str
+    concept: str
+    question: str
+    options: List[str]
+    difficulty: str
+    question_type: str # PRIOR_KNOWLEDGE, DIFFICULTY_PERCEPTION, INTEREST_LEVEL, VISUAL_PREFERENCE, REAL_WORLD_INTEREST
 
 class DiagnosticSubmitIn(BaseModel):
     answers: Dict[str, int] # question_id -> selected_option_index
@@ -55,14 +64,60 @@ class TopicAssessmentResult(BaseModel):
     status: str # Strong, Medium, Weak, Unknown
     score: int
 
+class ChapterLearnerProfileOut(BaseModel):
+    student_id: str
+    chapter_id: str
+    knowledge_level: str # foundational, intermediate, advanced
+    difficulty_level: str # low, moderate, high
+    interest_level: str # low, medium, high
+    visual_support_need: str # low, medium, high
+    real_world_interest: str # low, medium, high
+    content_density: str # low, medium, high
+    explanation_complexity: str # simple, moderate, detailed
+    example_frequency: str # high, moderate, low
+    memory_support: str # high, medium, low
+    contradiction_flag: bool = False
+    confidence_score: float = 1.0
+    student_explanation: str
+    completed_at: datetime
+
+class VisualComponentData(BaseModel):
+    type: str # comparison_table, flow_diagram, concept_map, labeled_diagram
+    title: str
+    headers: Optional[List[str]] = None
+    rows: Optional[List[List[str]]] = None
+    steps: Optional[List[Dict[str, str]]] = None
+    nodes: Optional[List[Dict[str, Any]]] = None
+
+class AdaptiveLessonSectionOut(BaseModel):
+    title: str
+    section_type: str # concept, in_simple_words, visual_comparison, flow_diagram, real_world_application, remember_tip, quick_check
+    content: str
+    bullet_points: List[str] = []
+    visual_component: Optional[VisualComponentData] = None
+    quick_check_question: Optional[Dict[str, Any]] = None
+
+class ChapterAdaptiveLessonOut(BaseModel):
+    chapter_id: str
+    chapter_title: str
+    subject_id: str
+    subject_name: str
+    student_explanation: str
+    learner_profile: ChapterLearnerProfileOut
+    prerequisites_recap: List[str] = []
+    sections: List[AdaptiveLessonSectionOut]
+
 class DiagnosticResultOut(BaseModel):
     assessment_id: str
     subject_id: str
+    chapter_id: Optional[str] = None
     total_score: int
     max_score: int
     percentage: float
     assigned_level: str
     topic_results: List[TopicAssessmentResult]
+    learner_profile: Optional[ChapterLearnerProfileOut] = None
+    student_explanation: Optional[str] = None
     recommended_starting_topic: Optional[str] = None
     completed_at: datetime
 
