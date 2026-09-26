@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BookOpen, ArrowRight, Lock, Mail, AlertCircle } from 'lucide-react';
@@ -10,23 +10,41 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      const redirectPath = user.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard';
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+    const cleanEmail = email.trim();
     try {
-      const loggedUser = await login(email, password);
-      if (loggedUser.role === 'TEACHER') {
-        navigate('/teacher/dashboard');
-      } else {
-        navigate('/student/dashboard');
-      }
+      const loggedUser = await login(cleanEmail, password);
+      const redirectPath = loggedUser.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard';
+      navigate(redirectPath, { replace: true });
     } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+      if (!err.response) {
+        setError('Unable to connect to the backend server. Please make sure the FastAPI backend is running on port 8000.');
+      } else {
+        const detail = err.response?.data?.detail;
+        if (typeof detail === 'string') {
+          setError(detail);
+        } else if (Array.isArray(detail)) {
+          setError(detail.map((d: any) => d.msg || JSON.stringify(d)).join(', '));
+        } else if (detail && typeof detail === 'object') {
+          setError((detail as any).msg || JSON.stringify(detail));
+        } else {
+          setError('Login failed. Please check your credentials.');
+        }
+      }
     } finally {
       setSubmitting(false);
     }

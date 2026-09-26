@@ -11,7 +11,9 @@ import {
   Compass,
   CheckSquare,
   Flame,
-  Wand2
+  Wand2,
+  School,
+  UserCheck
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -20,6 +22,7 @@ export const Sidebar: React.FC = () => {
 
   const studentLinks = [
     { name: 'Dashboard', to: '/student/dashboard', icon: LayoutDashboard },
+    { name: 'Class & Attendance', to: '/student/my-class', icon: School },
     { name: 'My Subjects', to: '/student/subjects', icon: BookOpen },
     { name: 'Adaptive Learning Path', to: '/student/learning-path', icon: Compass },
     { name: 'Quizzes & Practice', to: '/student/quizzes', icon: CheckSquare },
@@ -30,6 +33,7 @@ export const Sidebar: React.FC = () => {
 
   const teacherLinks = [
     { name: 'Dashboard', to: '/teacher/dashboard', icon: LayoutDashboard },
+    { name: 'Attendance Management', to: '/teacher/attendance', icon: UserCheck },
     { name: 'Subject Management', to: '/teacher/subjects', icon: BookOpen },
     { name: 'Curriculum Documents', to: '/teacher/documents', icon: Layers },
     { name: 'Student Analytics', to: '/teacher/analytics', icon: BarChart3 },

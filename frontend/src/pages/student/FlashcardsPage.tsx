@@ -290,18 +290,22 @@ export const FlashcardsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Interactive Flip Card (3D Style) */}
+          {/* Interactive Flip Card (3D Educational Flashcard) */}
           <div 
             onClick={handleFlip}
-            className="cursor-pointer min-h-[340px] perspective-1000 select-none"
+            className="cursor-pointer min-h-[340px] perspective-container select-none"
           >
             <motion.div
               animate={{ rotateY: isFlipped ? 180 : 0 }}
               transition={{ duration: 0.45, ease: "easeInOut" }}
               className="relative w-full min-h-[340px] rounded-3xl preserve-3d"
             >
-              {/* FRONT FACE */}
-              <div className={`absolute inset-0 backface-hidden azure-card rounded-3xl p-8 border-2 border-sky-300/80 dark:border-sky-800 shadow-xl flex flex-col justify-between ${isFlipped ? 'pointer-events-none' : ''}`}>
+              {/* FRONT FACE (Question) */}
+              <div 
+                className={`absolute inset-0 backface-hidden azure-card rounded-3xl p-8 border-2 border-sky-300/80 dark:border-sky-800 shadow-xl flex flex-col justify-between ${
+                  isFlipped ? 'pointer-events-none' : ''
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                     <Tag className="w-3 h-3" />
@@ -335,8 +339,12 @@ export const FlashcardsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* BACK FACE */}
-              <div className={`absolute inset-0 backface-hidden rotate-y-180 azure-card rounded-3xl p-8 border-2 border-indigo-400/80 dark:border-indigo-800 shadow-xl flex flex-col justify-between ${!isFlipped ? 'pointer-events-none' : ''}`}>
+              {/* BACK FACE (Answer) */}
+              <div 
+                className={`absolute inset-0 backface-hidden rotate-y-180 azure-card rounded-3xl p-8 border-2 border-indigo-400/80 dark:border-indigo-800 shadow-xl flex flex-col justify-between ${
+                  !isFlipped ? 'pointer-events-none' : ''
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
                     <Brain className="w-3.5 h-3.5" />

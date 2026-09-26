@@ -20,6 +20,10 @@ import { AdaptiveLearningPathPage } from './pages/student/AdaptiveLearningPathPa
 import { FlashcardsPage } from './pages/student/FlashcardsPage';
 import { QuizzesPage } from './pages/student/QuizzesPage';
 
+import { StudySpacePage } from './pages/student/StudySpacePage';
+import { StudentClassSubjectsPage } from './pages/student/StudentClassSubjectsPage';
+import { AttendanceCatchUpPage } from './pages/student/AttendanceCatchUpPage';
+
 // Teacher Pages
 import { TeacherDashboard } from './pages/teacher/TeacherDashboard';
 import { SubjectManagementPage } from './pages/teacher/SubjectManagementPage';
@@ -29,6 +33,7 @@ import { DocumentManagementPage } from './pages/teacher/DocumentManagementPage';
 import { DocumentReviewPage } from './pages/teacher/DocumentReviewPage';
 import { TeacherAnalyticsPage } from './pages/teacher/TeacherAnalyticsPage';
 import { AITeacherAssistantPage } from './pages/teacher/AITeacherAssistantPage';
+import { TeacherAttendanceManagementPage } from './pages/teacher/TeacherAttendanceManagementPage';
 
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth();
@@ -99,6 +104,30 @@ export const App: React.FC = () => {
               }
             />
             <Route
+              path="/student/diagnostic/chapter/:chapterId"
+              element={
+                <LayoutShell>
+                  <DiagnosticAssessmentPage />
+                </LayoutShell>
+              }
+            />
+            <Route
+              path="/student/study-space/:chapterId"
+              element={
+                <LayoutShell>
+                  <StudySpacePage />
+                </LayoutShell>
+              }
+            />
+            <Route
+              path="/student/adaptive-lesson/:chapterId"
+              element={
+                <LayoutShell>
+                  <StudySpacePage />
+                </LayoutShell>
+              }
+            />
+            <Route
               path="/student/learning-path"
               element={
                 <LayoutShell>
@@ -122,6 +151,22 @@ export const App: React.FC = () => {
                 </LayoutShell>
               }
             />
+            <Route
+              path="/student/my-class"
+              element={
+                <LayoutShell>
+                  <StudentClassSubjectsPage />
+                </LayoutShell>
+              }
+            />
+            <Route
+              path="/student/attendance-catchup/:subjectId"
+              element={
+                <LayoutShell>
+                  <AttendanceCatchUpPage />
+                </LayoutShell>
+              }
+            />
           </Route>
 
           {/* Teacher Portal Routes */}
@@ -131,6 +176,14 @@ export const App: React.FC = () => {
               element={
                 <LayoutShell>
                   <TeacherDashboard />
+                </LayoutShell>
+              }
+            />
+            <Route
+              path="/teacher/attendance"
+              element={
+                <LayoutShell>
+                  <TeacherAttendanceManagementPage />
                 </LayoutShell>
               }
             />

@@ -44,8 +44,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<User> => {
     setLoading(true);
+    const cleanEmail = email.trim();
     try {
-      const { access_token } = await authService.login(email, password);
+      const { access_token } = await authService.login(cleanEmail, password);
       localStorage.setItem('onepath_token', access_token);
       const userData = await authService.getMe();
       setUser(userData);
@@ -59,9 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (data: { name: string; email: string; password: string; role: UserRole; class_name?: string }): Promise<User> => {
     setLoading(true);
+    const cleanData = { ...data, email: data.email.trim(), name: data.name.trim() };
     try {
-      await authService.register(data);
-      const { access_token } = await authService.login(data.email, data.password);
+      await authService.register(cleanData);
+      const { access_token } = await authService.login(cleanData.email, cleanData.password);
       localStorage.setItem('onepath_token', access_token);
       const userData = await authService.getMe();
       setUser(userData);

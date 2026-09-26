@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types';
@@ -14,29 +14,48 @@ export const RegisterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const { register } = useAuth();
+  const { user, register } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      const redirectPath = user.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard';
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+    const cleanEmail = email.trim();
+    const cleanName = name.trim();
     try {
       const newUser = await register({
-        name,
-        email,
+        name: cleanName,
+        email: cleanEmail,
         password,
         role,
-        class_name: role === 'STUDENT' ? className : undefined,
+        class_name: role === 'STUDENT' ? className.trim() : undefined,
       });
-      if (newUser.role === 'TEACHER') {
-        navigate('/teacher/dashboard');
-      } else {
-        navigate('/student/dashboard');
-      }
+      const redirectPath = newUser.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard';
+      navigate(redirectPath, { replace: true });
     } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.detail || 'Registration failed. Please check your information.');
+      console.error('Registration error:', err);
+      if (!err.response) {
+        setError('Unable to connect to the backend server. Please make sure the FastAPI backend is running on port 8000.');
+      } else {
+        const detail = err.response?.data?.detail;
+        if (typeof detail === 'string') {
+          setError(detail);
+        } else if (Array.isArray(detail)) {
+          setError(detail.map((d: any) => d.msg || JSON.stringify(d)).join(', '));
+        } else if (detail && typeof detail === 'object') {
+          setError((detail as any).msg || JSON.stringify(detail));
+        } else {
+          setError('Registration failed. Please check your information.');
+        }
+      }
     } finally {
       setSubmitting(false);
     }

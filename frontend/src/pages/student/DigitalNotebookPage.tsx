@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { noteService, subjectService } from '../../api/services';
 import type { StudentNote, Subject, Chapter, Module } from '../../types';
 import { 
@@ -11,17 +11,21 @@ import {
   Save, 
   X, 
   Check, 
-  Filter
+  Filter,
+  ExternalLink,
+  Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const DigitalNotebookPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const stateParams = (location.state as any) || {};
 
   const [notes, setNotes] = useState<StudentNote[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('ALL');
+  const [selectedChapterFilter, setSelectedChapterFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -131,7 +135,7 @@ export const DigitalNotebookPage: React.FC = () => {
           content
         });
       }
-      setSuccessMsg(activeNoteId ? "Note saved successfully!" : "Note created!");
+      setSuccessMsg(activeNoteId ? "Note saved successfully" : "Note created");
       setTimeout(() => setSuccessMsg(null), 3000);
       setIsEditing(false);
       fetchNotesAndSubjects();
@@ -144,7 +148,7 @@ export const DigitalNotebookPage: React.FC = () => {
 
   const handleDeleteNote = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete this note?")) return;
+    if (!window.confirm("Delete this personal note?")) return;
 
     try {
       await noteService.delete(id);
@@ -156,67 +160,103 @@ export const DigitalNotebookPage: React.FC = () => {
 
   const filteredNotes = notes.filter(n => {
     const matchesSubject = selectedSubjectFilter === 'ALL' || n.subject_id === selectedSubjectFilter;
+    const matchesChapter = selectedChapterFilter === 'ALL' || n.chapter_id === selectedChapterFilter;
     const matchesQuery = n.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          n.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSubject && matchesQuery;
+    return matchesSubject && matchesChapter && matchesQuery;
   });
 
+  // Unique chapters across notes for the chapter filter
+  const filterableChapters = Array.from(
+    new Map(
+      notes
+        .filter(n => n.chapter_id && (selectedSubjectFilter === 'ALL' || n.subject_id === selectedSubjectFilter))
+        .map(n => [n.chapter_id, { id: n.chapter_id, title: n.chapter_title || 'Chapter' }])
+    ).values()
+  );
+
   return (
-    <div className="space-y-6 transition-colors duration-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Digital Notebook</h1>
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mt-1">
-            Organize personal study notes by Subject, Chapter, and Module
-          </p>
+    <div className="space-y-6 transition-colors duration-200 min-h-screen bg-[#faf9f6] dark:bg-slate-950 p-2 sm:p-4 rounded-3xl">
+      {/* Notebook Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/80 dark:border-slate-800 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 flex items-center justify-center font-bold shadow-xs">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-stone-100 tracking-tight font-serif">
+              Personal Study Notebook
+            </h1>
+            <p className="text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">
+              Paper-style digital notebook linked to your adaptive textbook chapters
+            </p>
+          </div>
         </div>
 
         <button
           onClick={openNewNoteModal}
-          className="px-5 py-2.5 btn-primary rounded-xl text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+          className="px-4 py-2.5 bg-stone-900 hover:bg-black dark:bg-amber-600 dark:hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" />
-          <span>Create New Note</span>
+          <span>Write New Note</span>
         </button>
       </div>
 
-      <div className="azure-card rounded-2xl p-4 border border-sky-200/90 dark:border-sky-900/60 flex flex-col md:flex-row gap-4 justify-between items-center">
+      {/* Filter & Search Bar */}
+      <div className="bg-[#f7f5ef] dark:bg-slate-900/90 rounded-2xl p-4 border border-stone-200/90 dark:border-slate-800 flex flex-col md:flex-row gap-3 justify-between items-center shadow-2xs">
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-sky-600 dark:text-sky-400 absolute left-3.5 top-3.5" />
+          <Search className="w-4 h-4 text-stone-400 dark:text-slate-500 absolute left-3.5 top-3" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search note titles or content..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-sky-200 dark:border-sky-800 rounded-xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500 transition-all"
+            placeholder="Search notes by keyword..."
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl text-xs font-medium text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500"
           />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          <Filter className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-stone-600 dark:text-slate-400">
+            <Filter className="w-3.5 h-3.5" />
+            <span>Subject:</span>
+          </div>
+
           <button
-            onClick={() => setSelectedSubjectFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            onClick={() => { setSelectedSubjectFilter('ALL'); setSelectedChapterFilter('ALL'); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               selectedSubjectFilter === 'ALL'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-700 border border-sky-200 dark:border-slate-700'
+                ? 'bg-amber-800 text-white shadow-xs'
+                : 'bg-white dark:bg-slate-800 text-stone-700 dark:text-slate-300 border border-stone-200 dark:border-slate-700 hover:bg-stone-100'
             }`}
           >
-            All Notes ({notes.length})
+            All ({notes.length})
           </button>
           {subjects.map(sub => (
             <button
               key={sub.id}
-              onClick={() => setSelectedSubjectFilter(sub.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              onClick={() => { setSelectedSubjectFilter(sub.id); setSelectedChapterFilter('ALL'); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 selectedSubjectFilter === sub.id
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-700 border border-sky-200 dark:border-slate-700'
+                  ? 'bg-amber-800 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-800 text-stone-700 dark:text-slate-300 border border-stone-200 dark:border-slate-700 hover:bg-stone-100'
               }`}
             >
               {sub.name}
             </button>
           ))}
+
+          {filterableChapters.length > 0 && (
+            <select
+              value={selectedChapterFilter}
+              onChange={(e) => setSelectedChapterFilter(e.target.value)}
+              className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg text-xs font-bold text-stone-800 dark:text-stone-200 cursor-pointer"
+            >
+              <option value="ALL">All Chapters</option>
+              {filterableChapters.map(c => (
+                <option key={c.id} value={c.id}>{c.title}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -228,17 +268,17 @@ export const DigitalNotebookPage: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="azure-card rounded-2xl p-12 text-center text-sm font-semibold text-slate-600 dark:text-slate-400">
-          Loading digital notes...
+        <div className="bg-[#fcfbf7] dark:bg-slate-900 rounded-2xl p-12 text-center text-xs font-semibold text-stone-500 dark:text-slate-400 border border-stone-200 dark:border-slate-800">
+          Opening digital notebook...
         </div>
       ) : filteredNotes.length === 0 ? (
-        <div className="azure-card rounded-2xl p-12 text-center space-y-3">
-          <FileText className="w-10 h-10 text-sky-300 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">No notes found</h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
+        <div className="bg-[#fcfbf7] dark:bg-slate-900/80 rounded-2xl p-12 text-center space-y-3 border border-stone-200 dark:border-slate-800">
+          <FileText className="w-8 h-8 text-amber-300 dark:text-amber-700 mx-auto" />
+          <h3 className="text-base font-bold text-stone-900 dark:text-white font-serif">Notebook Empty</h3>
+          <p className="text-xs text-stone-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
             {searchQuery || selectedSubjectFilter !== 'ALL'
-              ? "No notes matched your current filter criteria."
-              : "Click 'Create New Note' above to start taking notes for your subjects."}
+              ? "No notes matched your search or subject selection."
+              : "Click 'Write New Note' above or take notes while reading adaptive lessons."}
           </p>
         </div>
       ) : (
@@ -248,63 +288,80 @@ export const DigitalNotebookPage: React.FC = () => {
               key={note.id}
               whileHover={{ y: -3 }}
               onClick={() => openEditNoteModal(note)}
-              className="azure-card azure-card-hover rounded-2xl p-6 border border-sky-200/90 dark:border-sky-900/60 flex flex-col justify-between h-64 transition-all cursor-pointer group"
+              className="bg-[#fdfcf9] dark:bg-slate-900 rounded-2xl p-5 border border-stone-200/90 dark:border-slate-800 flex flex-col justify-between min-h-[220px] transition-all cursor-pointer group shadow-2xs hover:shadow-md relative overflow-hidden"
             >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-sky-800 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 px-2.5 py-1 rounded-md border border-sky-200 dark:border-sky-800">
+              {/* Notebook Left Margin Line */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-300 dark:bg-rose-900/60" />
+
+              <div className="pl-2">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-200/80 dark:border-amber-900 flex items-center gap-1">
+                    <Tag className="w-3 h-3" />
                     {note.subject_name || 'Subject'}
                   </span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => handleDeleteNote(note.id, e)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                      title="Delete note"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  
+                  <button
+                    onClick={(e) => handleDeleteNote(note.id, e)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-stone-400 hover:text-rose-600 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all"
+                    title="Delete note"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white line-clamp-1">{note.title}</h3>
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-2 line-clamp-4 leading-relaxed whitespace-pre-wrap">
+                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-serif line-clamp-1">
+                  {note.title}
+                </h3>
+                <p className="text-xs font-medium text-stone-700 dark:text-stone-300 mt-2 line-clamp-4 leading-relaxed whitespace-pre-wrap font-sans">
                   {note.content}
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-sky-100 dark:border-slate-800 mt-auto flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+              <div className="pt-3 border-t border-stone-200/60 dark:border-slate-800 mt-4 flex items-center justify-between text-[11px] text-stone-500 dark:text-slate-400 font-medium pl-2">
                 <span className="truncate pr-2">
-                  {note.chapter_title ? `${note.chapter_title}` : 'General Subject Note'}
+                  {note.chapter_title ? note.chapter_title : 'General Note'}
                 </span>
-                <span className="shrink-0">
-                  {new Date(note.updated_at).toLocaleDateString()}
-                </span>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (note.chapter_id) {
+                      navigate(`/student/study-space/${note.chapter_id}`);
+                    } else if (note.subject_id) {
+                      navigate(`/student/subjects/${note.subject_id}`);
+                    }
+                  }}
+                  className="text-amber-800 dark:text-amber-400 hover:underline flex items-center gap-1 font-bold shrink-0 cursor-pointer"
+                >
+                  <span>Open Lesson</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
               </div>
             </motion.div>
           ))}
         </div>
       )}
 
-      {/* Edit / Create Note Modal */}
+      {/* Edit / Create Note Paper Modal */}
       <AnimatePresence>
         {isEditing && (
-          <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-stone-950/50 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="azure-card bg-white dark:bg-slate-900 rounded-2xl p-7 max-w-2xl w-full border border-sky-200 dark:border-sky-800 shadow-2xl space-y-5"
+              className="bg-[#fcfbf7] dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-stone-300 dark:border-slate-800 shadow-2xl space-y-5 relative"
             >
-              <div className="flex items-center justify-between border-b border-sky-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center justify-between border-b border-stone-200 dark:border-slate-800 pb-4">
                 <div className="flex items-center gap-2">
-                  <Edit3 className="w-5 h-5 text-blue-600 dark:text-sky-400" />
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                    {activeNoteId ? 'Edit Digital Note' : 'Create New Digital Note'}
+                  <Edit3 className="w-5 h-5 text-amber-800 dark:text-amber-400" />
+                  <h2 className="text-base font-bold text-stone-900 dark:text-white font-serif">
+                    {activeNoteId ? 'Edit Personal Note' : 'Write Personal Note'}
                   </h2>
                 </div>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-full hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer"
+                  className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-white rounded-full hover:bg-stone-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -313,7 +370,7 @@ export const DigitalNotebookPage: React.FC = () => {
               <form onSubmit={handleSaveNote} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Subject *</label>
+                    <label className="block text-xs font-bold text-stone-800 dark:text-slate-200 mb-1">Subject *</label>
                     <select
                       required
                       value={subjectId}
@@ -322,7 +379,7 @@ export const DigitalNotebookPage: React.FC = () => {
                         setChapterId('');
                         setModuleId('');
                       }}
-                      className="w-full px-3 py-2 bg-sky-50/50 dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-stone-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500"
                     >
                       <option value="">Select Subject</option>
                       {subjects.map(s => (
@@ -332,14 +389,14 @@ export const DigitalNotebookPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Chapter (Optional)</label>
+                    <label className="block text-xs font-bold text-stone-800 dark:text-slate-200 mb-1">Chapter (Optional)</label>
                     <select
                       value={chapterId}
                       onChange={(e) => {
                         setChapterId(e.target.value);
                         setModuleId('');
                       }}
-                      className="w-full px-3 py-2 bg-sky-50/50 dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-stone-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500"
                     >
                       <option value="">All Chapters</option>
                       {availableChapters.map(c => (
@@ -349,11 +406,11 @@ export const DigitalNotebookPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Module (Optional)</label>
+                    <label className="block text-xs font-bold text-stone-800 dark:text-slate-200 mb-1">Module (Optional)</label>
                     <select
                       value={moduleId}
                       onChange={(e) => setModuleId(e.target.value)}
-                      className="w-full px-3 py-2 bg-sky-50/50 dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-stone-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500"
                     >
                       <option value="">All Modules</option>
                       {availableModules.map(m => (
@@ -364,44 +421,44 @@ export const DigitalNotebookPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Note Title *</label>
+                  <label className="block text-xs font-bold text-stone-800 dark:text-slate-200 mb-1">Title *</label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Formula derivation for energy states"
-                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500"
+                    placeholder="Note title..."
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl text-xs font-bold text-stone-900 dark:text-white placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 font-serif"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Content (Markdown Supported) *</label>
+                  <label className="block text-xs font-bold text-stone-800 dark:text-slate-200 mb-1">Notes *</label>
                   <textarea
                     required
                     rows={6}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder="Type personal explanations, summaries, or questions here..."
-                    className="w-full p-4 bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-500/25 focus:border-sky-500 leading-relaxed font-sans"
+                    placeholder="Write key derivations, explanations, or formulas..."
+                    className="w-full p-4 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl text-xs font-medium text-stone-900 dark:text-white placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 leading-relaxed font-sans"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-sky-100 dark:border-slate-800">
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 btn-secondary rounded-xl text-xs font-bold cursor-pointer"
+                    className="px-4 py-2 bg-stone-100 hover:bg-stone-200 dark:bg-slate-800 text-stone-700 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-5 py-2 btn-primary rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    <Save className="w-4 h-4" />
-                    <span>{saving ? 'Saving...' : activeNoteId ? 'Update Note' : 'Create Note'}</span>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{saving ? 'Saving...' : activeNoteId ? 'Update Note' : 'Save Note'}</span>
                   </button>
                 </div>
               </form>

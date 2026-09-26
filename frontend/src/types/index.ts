@@ -46,6 +46,8 @@ export interface Subject {
   description?: string;
   teacher_id: string;
   teacher_name?: string;
+  class_id?: string;
+  class_name?: string;
   chapter_count?: number;
   chapters: Chapter[];
   created_at: string;
@@ -447,5 +449,154 @@ export interface StudentAnalyticsDetail {
   revision_items: Array<{ id: string; topic: string; priority: string; reason: string; due_date: string }>;
   recommended_intervention: string;
 }
+
+export interface ChapterDiagnosticQuestion {
+  id: string;
+  concept: string;
+  question: string;
+  options: string[];
+  difficulty: string;
+  question_type: 'PRIOR_KNOWLEDGE' | 'DIFFICULTY_PERCEPTION' | 'INTEREST_LEVEL' | 'VISUAL_PREFERENCE' | 'REAL_WORLD_INTEREST';
+}
+
+export interface ChapterLearnerProfile {
+  student_id: string;
+  chapter_id: string;
+  knowledge_level: 'foundational' | 'intermediate' | 'advanced';
+  difficulty_level: 'low' | 'moderate' | 'high';
+  interest_level: 'low' | 'medium' | 'high';
+  visual_support_need: 'low' | 'medium' | 'high';
+  real_world_interest: 'low' | 'medium' | 'high';
+  content_density: 'low' | 'medium' | 'high';
+  explanation_complexity: 'simple' | 'moderate' | 'detailed';
+  example_frequency: 'high' | 'moderate' | 'low';
+  memory_support: 'high' | 'medium' | 'low';
+  contradiction_flag: boolean;
+  confidence_score: number;
+  student_explanation: string;
+  completed_at: string;
+}
+
+export interface VisualComponentData {
+  type: 'flow_diagram' | 'comparison_table' | 'concept_map' | 'labeled_diagram';
+  title: string;
+  headers?: string[];
+  rows?: string[][];
+  steps?: Array<{ step_number: string; title: string; description: string }>;
+  nodes?: Array<{ id: string; label: string; details?: string }>;
+}
+
+export interface AdaptiveLessonSection {
+  title: string;
+  section_type: 'concept' | 'in_simple_words' | 'visual_comparison' | 'flow_diagram' | 'real_world_application' | 'remember_tip' | 'quick_check';
+  content: string;
+  bullet_points: string[];
+  visual_component?: VisualComponentData;
+  quick_check_question?: {
+    question: string;
+    options: string[];
+    correct_option_index: number;
+    explanation?: string;
+  };
+}
+
+export interface ChapterAdaptiveLesson {
+  chapter_id: string;
+  chapter_title: string;
+  subject_id: string;
+  subject_name: string;
+  student_explanation: string;
+  learner_profile: ChapterLearnerProfile;
+  prerequisites_recap: string[];
+  sections: AdaptiveLessonSection[];
+}
+
+// Phase 7 Types
+export interface SchoolClass {
+  id: string;
+  name: string;
+  grade_level: number;
+  created_at: string;
+  subject_count?: number;
+}
+
+export interface SubjectAttendanceSummary {
+  subject_id: string;
+  subject_name: string;
+  class_name?: string;
+  total_classes: number;
+  attended_classes: number;
+  missed_classes: number;
+  attendance_percentage: number;
+  status_label: 'On track' | 'Monitor' | 'Catch-up recommended';
+  needs_catchup: boolean;
+  catchup_tier?: 'ACCELERATED' | 'FOUNDATIONAL';
+}
+
+export interface StudentAttendanceRosterItem {
+  student_id: string;
+  student_name: string;
+  total_classes: number;
+  attended_classes: number;
+  missed_classes: number;
+  attendance_percentage: number;
+  status_label: string;
+  quiz_accuracy: number;
+  needs_catchup: boolean;
+}
+
+export interface CatchUpSection {
+  title: string;
+  section_type: 'missed_concepts' | 'key_definitions' | 'visual_diagram' | 'short_explanation' | 'key_examples' | 'quick_check';
+  content: string;
+  bullet_points?: string[];
+  diagram_headers?: string[];
+  diagram_rows?: string[][];
+}
+
+export interface CatchUpPathData {
+  subject_id: string;
+  subject_name: string;
+  attendance_percentage: number;
+  quiz_accuracy: number;
+  catchup_tier: 'ACCELERATED' | 'FOUNDATIONAL';
+  recommendation_summary: string;
+  missed_chapters: string[];
+  sections: CatchUpSection[];
+}
+
+export interface TextHighlight {
+  id: string;
+  student_id: string;
+  subject_id: string;
+  chapter_id?: string;
+  module_id?: string;
+  selected_text: string;
+  color: 'yellow' | 'blue' | 'green';
+  created_at: string;
+}
+
+export interface TextComment {
+  id: string;
+  student_id: string;
+  subject_id: string;
+  chapter_id?: string;
+  module_id?: string;
+  selected_text: string;
+  comment_text: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContextualAIAskResponse {
+  selected_text: string;
+  mode: string;
+  explanation: string;
+  answer?: string;
+  citations?: string[];
+  key_points: string[];
+  real_world_analogy?: string;
+}
+
 
 

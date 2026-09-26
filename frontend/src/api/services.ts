@@ -27,7 +27,17 @@ import type {
   RecommendationItem,
   TeacherAnalyticsOverview,
   StudentCohortItem,
-  StudentAnalyticsDetail
+  StudentAnalyticsDetail,
+  ChapterDiagnosticQuestion,
+  ChapterLearnerProfile,
+  ChapterAdaptiveLesson,
+  SchoolClass,
+  SubjectAttendanceSummary,
+  StudentAttendanceRosterItem,
+  CatchUpPathData,
+  TextHighlight,
+  TextComment,
+  ContextualAIAskResponse
 } from '../types';
 
 // Auth Services
@@ -238,6 +248,18 @@ export const diagnosticService = {
   getHistory: async (subjectId: string) => {
     const res = await apiClient.get<DiagnosticResult[]>(`/diagnostic/${subjectId}/history`);
     return res.data;
+  },
+  getChapterQuestions: async (chapterId: string) => {
+    const res = await apiClient.get<ChapterDiagnosticQuestion[]>(`/diagnostic/chapter/${chapterId}/questions`);
+    return res.data;
+  },
+  submitChapterAssessment: async (chapterId: string, answers: Record<string, number>) => {
+    const res = await apiClient.post<DiagnosticResult>(`/diagnostic/chapter/${chapterId}/submit`, { answers });
+    return res.data;
+  },
+  getChapterProfile: async (chapterId: string) => {
+    const res = await apiClient.get<ChapterLearnerProfile | null>(`/diagnostic/chapter/${chapterId}/profile`);
+    return res.data;
   }
 };
 
@@ -255,6 +277,10 @@ export const learningPathService = {
 
 // Adaptive Content & Personalized Notes Services
 export const adaptiveContentService = {
+  getChapterLesson: async (chapterId: string) => {
+    const res = await apiClient.get<ChapterAdaptiveLesson>(`/adaptive-content/chapter/${chapterId}/lesson`);
+    return res.data;
+  },
   explain: async (data: { subject_id: string; module_id?: string; topic_title: string; explanation_level?: string; format_type?: string; custom_question?: string }) => {
     const res = await apiClient.post<AdaptiveExplainResponse>('/adaptive-content/explain', data);
     return res.data;
@@ -393,5 +419,82 @@ export const teacherAssistantService = {
     return res.data;
   }
 };
+
+// Phase 7 Services: School Classes, Attendance, Study Workspace
+export const classService = {
+  getAll: async () => {
+    const res = await apiClient.get<SchoolClass[]>('/classes');
+    return res.data;
+  },
+  getSubjects: async (classId: string) => {
+    const res = await apiClient.get<Subject[]>(`/classes/${classId}/subjects`);
+    return res.data;
+  },
+  create: async (data: { name: string; grade_level?: number }) => {
+    const res = await apiClient.post<SchoolClass>('/classes', data);
+    return res.data;
+  }
+};
+
+export const attendanceService = {
+  getStudentSummary: async () => {
+    const res = await apiClient.get<SubjectAttendanceSummary[]>('/attendance/student/me');
+    return res.data;
+  },
+  getTeacherRoster: async (classId: string, subjectId: string) => {
+    const res = await apiClient.get<StudentAttendanceRosterItem[]>(`/attendance/teacher/class/${classId}/subject/${subjectId}`);
+    return res.data;
+  },
+  markAttendance: async (data: { class_id: string; subject_id: string; date: string; records: Array<{ student_id: string; status: 'PRESENT' | 'ABSENT' }> }) => {
+    const res = await apiClient.post<{ status: string; message: string }>('/attendance/teacher/mark', data);
+    return res.data;
+  },
+  getCatchUpPath: async (subjectId: string) => {
+    const res = await apiClient.get<CatchUpPathData>(`/attendance/catch-up/${subjectId}`);
+    return res.data;
+  }
+};
+
+export const studyWorkspaceService = {
+  getHighlights: async (filters?: { subject_id?: string; chapter_id?: string; module_id?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.subject_id) params.append('subject_id', filters.subject_id);
+    if (filters?.chapter_id) params.append('chapter_id', filters.chapter_id);
+    if (filters?.module_id) params.append('module_id', filters.module_id);
+    const res = await apiClient.get<TextHighlight[]>(`/study-workspace/highlights?${params.toString()}`);
+    return res.data;
+  },
+  createHighlight: async (data: { subject_id: string; chapter_id?: string; module_id?: string; selected_text: string; color?: 'yellow' | 'blue' | 'green' }) => {
+    const res = await apiClient.post<TextHighlight>('/study-workspace/highlights', data);
+    return res.data;
+  },
+  deleteHighlight: async (id: string) => {
+    await apiClient.delete(`/study-workspace/highlights/${id}`);
+  },
+  getComments: async (filters?: { subject_id?: string; chapter_id?: string; module_id?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.subject_id) params.append('subject_id', filters.subject_id);
+    if (filters?.chapter_id) params.append('chapter_id', filters.chapter_id);
+    if (filters?.module_id) params.append('module_id', filters.module_id);
+    const res = await apiClient.get<TextComment[]>(`/study-workspace/comments?${params.toString()}`);
+    return res.data;
+  },
+  createComment: async (data: { subject_id: string; chapter_id?: string; module_id?: string; selected_text: string; comment_text: string }) => {
+    const res = await apiClient.post<TextComment>('/study-workspace/comments', data);
+    return res.data;
+  },
+  updateComment: async (id: string, data: { comment_text: string }) => {
+    const res = await apiClient.put<TextComment>(`/study-workspace/comments/${id}`, data);
+    return res.data;
+  },
+  deleteComment: async (id: string) => {
+    await apiClient.delete(`/study-workspace/comments/${id}`);
+  },
+  askAI: async (data: { subject_id: string; chapter_id?: string; module_id?: string; selected_text: string; mode?: string; custom_prompt?: string }) => {
+    const res = await apiClient.post<ContextualAIAskResponse>('/study-workspace/ask-ai', data);
+    return res.data;
+  }
+};
+
 
 
