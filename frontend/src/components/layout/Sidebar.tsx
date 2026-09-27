@@ -12,7 +12,8 @@ import {
   CheckSquare,
   Flame,
   Wand2,
-  UserCheck
+  UserCheck,
+  HelpCircle
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -72,6 +73,23 @@ export const Sidebar: React.FC = () => {
             );
           })}
         </nav>
+
+        {/* Student Instructions Guide PDF Link */}
+        <div className="pt-2 mt-2 border-t border-sky-100 dark:border-slate-800/80">
+          <a
+            href="/OnePath_AI_Student_Guide.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-sky-800 dark:text-sky-300 bg-sky-100/60 dark:bg-slate-800/60 hover:bg-sky-200/70 dark:hover:bg-slate-700/80 transition-colors border border-sky-200/80 dark:border-sky-800/60 group"
+            title="Open Student Guide PDF instructions"
+          >
+            <div className="flex items-center gap-2.5">
+              <HelpCircle className="w-4 h-4 text-sky-600 dark:text-sky-400 group-hover:scale-110 transition-transform" />
+              <span>Student Guide</span>
+            </div>
+            <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-sky-200 dark:bg-sky-900 text-sky-800 dark:text-sky-200 font-extrabold">PDF</span>
+          </a>
+        </div>
       </div>
 
       {/* Portal Active Status Card */}

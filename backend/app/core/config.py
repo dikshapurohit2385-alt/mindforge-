@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./onepath_ai.db")
     
     # AI Integration
+    ENABLE_LOCAL_MODEL: bool = os.getenv("ENABLE_LOCAL_MODEL", "true").lower() in ("true", "1", "yes")
+    LOCAL_MODEL_PATH: str = os.getenv("LOCAL_MODEL_PATH", "ml/models/onepath-custom-v1")
+    LOCAL_MODEL_DEVICE: str = os.getenv("LOCAL_MODEL_DEVICE", "cuda")
+    LOCAL_MODEL_TIMEOUT_SECONDS: float = float(os.getenv("LOCAL_MODEL_TIMEOUT_SECONDS", "25.0"))
+
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")

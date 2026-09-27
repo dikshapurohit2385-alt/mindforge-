@@ -5,12 +5,16 @@ import logging
 from typing import Optional, Dict, Any, List
 import httpx
 from app.core.config import settings
+from app.services.custom_model_service import custom_model_service
 
 logger = logging.getLogger("onepath_ai.llm")
 
 class LLMService:
     """
-    Unified, resilient LLM service supporting Groq (primary) and Google Gemini (fallback),
+    Unified, resilient LLM service:
+    1. Custom Educational Model (Primary)
+    2. Groq Cloud API (First Fallback)
+    3. Google Gemini (Second Fallback)
     with robust JSON parsing and error diagnostics.
     """
 
@@ -33,12 +37,30 @@ class LLMService:
         max_tokens: int = 1200
     ) -> Optional[str]:
         """
-        Generate text completion with provider fallback.
-        Tries Groq first (high capacity, no rate limits), then Gemini.
+        Generate text completion with multi-tier provider fallback:
+        1. Our Custom Model (Primary)
+        2. Groq (Secondary Fallback)
+        3. Gemini (Tertiary Fallback)
         """
         self._refresh_keys()
 
-        # 1. Try Groq (Primary)
+        # 1. Try Our Custom Model (Primary)
+        if custom_model_service.is_available():
+            try:
+                res = await custom_model_service.generate_text(
+                    prompt=prompt,
+                    system_instruction=system_instruction,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                if res and len(res.strip()) > 0:
+                    logger.info("[LLM Service] Answered successfully via Primary Custom Model.")
+                    return res
+                logger.info("[LLM Service] Custom Model returned empty. Falling back to Groq...")
+            except Exception as e:
+                logger.warning(f"[LLM Service] Custom Model generation error: {e}. Falling back to Groq...")
+
+        # 2. Try Groq (Secondary Fallback)
         if self.groq_api_key:
             res = await self._call_groq(
                 prompt=prompt,
@@ -48,9 +70,10 @@ class LLMService:
                 json_mode=False
             )
             if res:
+                logger.info("[LLM Service] Answered via Groq Fallback.")
                 return res
 
-        # 2. Try Gemini (Secondary Fallback)
+        # 3. Try Gemini (Tertiary Fallback)
         if self.gemini_api_key:
             res = await self._call_gemini(
                 prompt=prompt,
@@ -60,6 +83,7 @@ class LLMService:
                 json_mode=False
             )
             if res:
+                logger.info("[LLM Service] Answered via Gemini Fallback.")
                 return res
 
         return None
@@ -72,11 +96,30 @@ class LLMService:
         max_tokens: int = 2000
     ) -> Optional[Any]:
         """
-        Generate structured JSON output with automatic parsing and cleanup.
+        Generate structured JSON output with automatic parsing and multi-tier fallback:
+        1. Our Custom Model (Primary)
+        2. Groq (Secondary Fallback)
+        3. Gemini (Tertiary Fallback)
         """
         self._refresh_keys()
 
-        # 1. Try Groq
+        # 1. Try Our Custom Model (Primary)
+        if custom_model_service.is_available():
+            try:
+                parsed = await custom_model_service.generate_json(
+                    prompt=prompt,
+                    system_instruction=system_instruction,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                if parsed is not None:
+                    logger.info("[LLM Service] JSON generated successfully via Primary Custom Model.")
+                    return parsed
+                logger.info("[LLM Service] Custom Model JSON was empty. Falling back to Groq...")
+            except Exception as e:
+                logger.warning(f"[LLM Service] Custom Model JSON error: {e}. Falling back to Groq...")
+
+        # 2. Try Groq (Secondary Fallback)
         if self.groq_api_key:
             res_str = await self._call_groq(
                 prompt=prompt,
@@ -87,9 +130,10 @@ class LLMService:
             )
             parsed = self._extract_json(res_str)
             if parsed is not None:
+                logger.info("[LLM Service] JSON generated via Groq Fallback.")
                 return parsed
 
-        # 2. Try Gemini
+        # 3. Try Gemini (Tertiary Fallback)
         if self.gemini_api_key:
             res_str = await self._call_gemini(
                 prompt=prompt,
@@ -100,6 +144,7 @@ class LLMService:
             )
             parsed = self._extract_json(res_str)
             if parsed is not None:
+                logger.info("[LLM Service] JSON generated via Gemini Fallback.")
                 return parsed
 
         return None

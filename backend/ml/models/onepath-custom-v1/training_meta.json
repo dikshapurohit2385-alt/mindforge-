@@ -1,0 +1,7 @@
+{
+  "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "epochs": 3,
+  "train_loss": 4.6641180674235025,
+  "device": "cuda",
+  "samples_trained": 39
+}

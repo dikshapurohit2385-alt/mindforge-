@@ -97,7 +97,8 @@ from app.api import (
     teacher_analytics,
     classes,
     attendance,
-    study_workspace
+    study_workspace,
+    custom_model
 )
 
 # Existing Phase 1 & 2 Routers
@@ -126,6 +127,9 @@ app.include_router(teacher_analytics.router, prefix=settings.API_V1_STR)
 app.include_router(classes.router, prefix=settings.API_V1_STR)
 app.include_router(attendance.router, prefix=settings.API_V1_STR)
 app.include_router(study_workspace.router, prefix=settings.API_V1_STR)
+
+# Custom Model Diagnostic & Query Router
+app.include_router(custom_model.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

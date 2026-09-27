@@ -17,7 +17,8 @@ import type {
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, 
-  School
+  School,
+  HelpCircle
 } from 'lucide-react';
 import { EnrolledSubjectsCard } from '../../components/student/dashboard/EnrolledSubjectsCard';
 import { AttendanceViewerCard } from '../../components/student/dashboard/AttendanceViewerCard';
@@ -78,7 +79,17 @@ export const StudentDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <a
+            href="/OnePath_AI_Student_Guide.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1 rounded-xl bg-sky-50 dark:bg-sky-950/70 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-800 dark:text-sky-300 text-xs font-bold border border-sky-200 dark:border-sky-800 flex items-center gap-1.5 transition-colors shadow-2xs"
+            title="Download or open the Student Guide instructions PDF"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span>Student Guide (PDF)</span>
+          </a>
           {profile?.class_name && (
             <span className="px-3 py-1 rounded-xl bg-stone-100 dark:bg-slate-800 text-stone-800 dark:text-stone-200 text-xs font-bold border border-stone-200 dark:border-slate-700 flex items-center gap-1.5">
               <School className="w-3.5 h-3.5 text-indigo-600 dark:text-sky-400" />

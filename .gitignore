@@ -3,7 +3,9 @@ venv/
 .venv/
 env/
 node_modules/
-
+ # ML Training artifacts
+backend/ml/models/**/checkpoints/
+*.pt
 # Environment Variables
 .env
 .env.*
@@ -40,3 +42,6 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# ML Model weights (Kept local, exceeds GitHub 100MB limit)
+*.safetensors

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { LogOut, BookOpen, Sun, Moon } from 'lucide-react';
+import { LogOut, BookOpen, Sun, Moon, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -66,6 +66,19 @@ export const Navbar: React.FC = () => {
 
         {/* Right Actions */}
         <div className="flex items-center gap-3">
+          {/* Student Instructions Guide PDF */}
+          <a
+            href="/OnePath_AI_Student_Guide.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-slate-800 transition-colors border border-sky-200/80 dark:border-sky-800/80 bg-sky-50/60 dark:bg-slate-900/60 shadow-2xs"
+            title="How to Use OnePath AI (Student Guide PDF)"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span className="hidden md:inline">Student Guide</span>
+            <span className="text-[9px] px-1 py-0.2 rounded bg-sky-200/80 dark:bg-sky-900/80 text-sky-900 dark:text-sky-200 font-extrabold uppercase">PDF</span>
+          </a>
+
           {/* Light / Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
@@ -143,6 +156,17 @@ export const Navbar: React.FC = () => {
                         </span>
                       </div>
                     </div>
+
+                    <a
+                      href="/OnePath_AI_Student_Guide.pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full py-2 px-3 mb-2 rounded-xl text-xs font-bold text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-slate-800/80 hover:bg-sky-100 dark:hover:bg-slate-700/80 border border-sky-200 dark:border-sky-800/60 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                      <span>Student Guide (PDF)</span>
+                    </a>
 
                     <button
                       type="button"
