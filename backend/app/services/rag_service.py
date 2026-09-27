@@ -7,6 +7,7 @@ import httpx
 from sqlalchemy.orm import Session
 from app.models.document import Document, ExtractedContent, DocumentStatus
 from app.models.learning_engine import DocumentChunk
+from app.services.llm_service import llm_service
 
 STOP_WORDS = {
     "a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or", "is", "are", 
@@ -257,36 +258,28 @@ class RAGService:
         context: str,
         citations: List[Dict[str, Any]]
     ) -> str:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if api_key:
-            try:
-                system_instruction = (
-                    "You are MindForge's strict educational AI tutor. You MUST answer the student's question "
-                    "relying EXCLUSIVELY on the provided document excerpts. "
-                    "Do NOT extrapolate or invent facts not present in the text. "
-                    "Cite the document name and page number for each key claim."
-                )
-                prompt = (
-                    f"CONTEXT PASSAGES:\n{context}\n\n"
-                    f"STUDENT QUESTION: {question}\n\n"
-                    f"Provide a clear, accurate explanation strictly grounded in the context above:"
-                )
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-                async with httpx.AsyncClient(timeout=12.0) as client:
-                    resp = await client.post(
-                        url,
-                        json={
-                            "contents": [{"parts": [{"text": f"{system_instruction}\n\n{prompt}"}]}],
-                            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 600}
-                        }
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                        if text:
-                            return text.strip()
-            except Exception as e:
-                print(f"[RAG] Gemini generation failed: {e}")
+        try:
+            system_instruction = (
+                "You are MindForge's strict educational AI tutor. You MUST answer the student's question "
+                "relying EXCLUSIVELY on the provided document excerpts. "
+                "Do NOT extrapolate or invent facts not present in the text. "
+                "Cite the document name and page number for each key claim."
+            )
+            prompt = (
+                f"CONTEXT PASSAGES:\n{context}\n\n"
+                f"STUDENT QUESTION: {question}\n\n"
+                f"Provide a clear, accurate explanation strictly grounded in the context above:"
+            )
+            ai_text = await llm_service.generate_text(
+                prompt=prompt,
+                system_instruction=system_instruction,
+                temperature=0.2,
+                max_tokens=600
+            )
+            if ai_text:
+                return ai_text.strip()
+        except Exception as e:
+            print(f"[RAG] LLM generation failed: {e}")
 
         # Deterministic Grounded Synthesis Fallback
         primary_cit = citations[0]

@@ -223,10 +223,7 @@ export const StudySpacePage: React.FC = () => {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center justify-between pt-1 shrink-0">
-          <span className="text-[10px] font-medium text-stone-400 dark:text-slate-500">
-            Saved notes synchronize with /student/notebook
-          </span>
+        <div className="flex items-center justify-end pt-1 shrink-0">
 
           <div className="flex items-center gap-2">
             {activeNoteId && (

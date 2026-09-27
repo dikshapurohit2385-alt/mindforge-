@@ -19,8 +19,6 @@ def create_chapter(
     subject = db.query(Subject).filter(Subject.id == subject_id).first()
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
-    if subject.teacher_id != current_teacher.id:
-        raise HTTPException(status_code=403, detail="Not authorized to manage this subject")
 
     chapter = Chapter(
         subject_id=subject_id,
@@ -52,8 +50,6 @@ def update_chapter(
     chapter = db.query(Chapter).filter(Chapter.id == id).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
-    if chapter.subject.teacher_id != current_teacher.id:
-        raise HTTPException(status_code=403, detail="Not authorized to edit this chapter")
 
     if chapter_in.title is not None:
         chapter.title = chapter_in.title
@@ -75,8 +71,6 @@ def delete_chapter(
     chapter = db.query(Chapter).filter(Chapter.id == id).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
-    if chapter.subject.teacher_id != current_teacher.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this chapter")
 
     db.delete(chapter)
     db.commit()

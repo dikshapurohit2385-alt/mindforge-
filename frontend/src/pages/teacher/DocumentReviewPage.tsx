@@ -18,6 +18,7 @@ import {
   Check
 } from 'lucide-react';
 import { documentService } from '../../api/services';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 import type { DocumentDetail, ExtractedContentItem, DocumentStatus } from '../../types';
 
 export const DocumentReviewPage: React.FC = () => {
@@ -561,8 +562,15 @@ export const DocumentReviewPage: React.FC = () => {
 
       {/* Approve Modal */}
       {isApproveOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
-          <div className="azure-card rounded-2xl max-w-md w-full p-6 border border-emerald-300 dark:border-emerald-800 shadow-2xl">
+        <ModalOverlay
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in"
+          onClose={() => setIsApproveOpen(false)}
+          onConfirm={() => handleReviewSubmit('APPROVED')}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="azure-card rounded-2xl max-w-md w-full p-6 border border-emerald-300 dark:border-emerald-800 shadow-2xl"
+          >
             <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3 font-bold">
               <CheckCircle2 className="w-6 h-6" />
             </div>
@@ -614,13 +622,20 @@ export const DocumentReviewPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Reject Modal */}
       {isRejectOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
-          <div className="azure-card rounded-2xl max-w-md w-full p-6 border border-rose-300 dark:border-rose-900 shadow-2xl">
+        <ModalOverlay
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in"
+          onClose={() => setIsRejectOpen(false)}
+          onConfirm={() => handleReviewSubmit('REJECTED')}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="azure-card rounded-2xl max-w-md w-full p-6 border border-rose-300 dark:border-rose-900 shadow-2xl"
+          >
             <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3 font-bold">
               <XCircle className="w-6 h-6" />
             </div>
@@ -673,7 +688,7 @@ export const DocumentReviewPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

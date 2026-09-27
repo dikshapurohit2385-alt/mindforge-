@@ -14,6 +14,7 @@ import {
   Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 
 export const SubjectManagementPage: React.FC = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -185,11 +186,15 @@ export const SubjectManagementPage: React.FC = () => {
       {/* Edit / Create Subject Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <ModalOverlay
+            className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4"
+            onClose={() => setIsModalOpen(false)}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
               className="azure-card bg-white dark:bg-slate-900 rounded-2xl p-7 max-w-lg w-full border border-sky-200 dark:border-sky-800 shadow-2xl space-y-5"
             >
               <div className="flex items-center justify-between border-b border-sky-100 dark:border-slate-800 pb-4">
@@ -250,18 +255,23 @@ export const SubjectManagementPage: React.FC = () => {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </ModalOverlay>
         )}
       </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {deletingSubject && (
-          <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <ModalOverlay
+            className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4"
+            onClose={() => setDeletingSubject(null)}
+            onConfirm={confirmDeleteSubject}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
               className="azure-card bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full border border-rose-200 dark:border-rose-900 shadow-2xl space-y-4"
             >
               <div className="flex items-center gap-3 text-rose-600">
@@ -292,7 +302,7 @@ export const SubjectManagementPage: React.FC = () => {
                 </button>
               </div>
             </motion.div>
-          </div>
+          </ModalOverlay>
         )}
       </AnimatePresence>
     </div>

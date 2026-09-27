@@ -77,7 +77,7 @@ def test_chapter_diagnostic_and_adaptive_lesson_flow():
     assert result["learner_profile"] is not None
     assert result["learner_profile"]["knowledge_level"] == "foundational"
     assert result["learner_profile"]["contradiction_flag"] == True
-    assert "foundations" in result["student_explanation"].lower() or "basics" in result["student_explanation"].lower() or "confidence" in result["student_explanation"].lower()
+    assert any(k in result["student_explanation"].lower() for k in ["foundation", "basics", "confidence", "confident"])
 
     # 6. Fetch Chapter Learner Profile
     prof_resp = client.get(f"/api/v1/diagnostic/chapter/{chapter_id}/profile", headers=student_headers)

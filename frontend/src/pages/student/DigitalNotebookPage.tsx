@@ -16,6 +16,7 @@ import {
   Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 
 export const DigitalNotebookPage: React.FC = () => {
   const location = useLocation();
@@ -345,11 +346,15 @@ export const DigitalNotebookPage: React.FC = () => {
       {/* Edit / Create Note Paper Modal */}
       <AnimatePresence>
         {isEditing && (
-          <div className="fixed inset-0 z-50 bg-stone-950/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <ModalOverlay
+            className="fixed inset-0 z-50 bg-stone-950/50 backdrop-blur-xs flex items-center justify-center p-4"
+            onClose={() => setIsEditing(false)}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
               className="bg-[#fcfbf7] dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-stone-300 dark:border-slate-800 shadow-2xl space-y-5 relative"
             >
               <div className="flex items-center justify-between border-b border-stone-200 dark:border-slate-800 pb-4">
@@ -459,11 +464,12 @@ export const DigitalNotebookPage: React.FC = () => {
                   >
                     <Save className="w-3.5 h-3.5" />
                     <span>{saving ? 'Saving...' : activeNoteId ? 'Update Note' : 'Save Note'}</span>
+                    <span className="text-[10px] opacity-75 font-mono ml-0.5 hidden sm:inline">(Ctrl+↵)</span>
                   </button>
                 </div>
               </form>
             </motion.div>
-          </div>
+          </ModalOverlay>
         )}
       </AnimatePresence>
     </div>

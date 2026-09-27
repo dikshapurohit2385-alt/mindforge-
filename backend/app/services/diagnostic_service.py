@@ -12,6 +12,7 @@ from app.models.learning_engine import (
     RevisionItem
 )
 from app.models.academic import Subject, Chapter
+from app.services.llm_service import llm_service
 
 class DiagnosticService:
     def get_or_seed_diagnostic_questions(self, subject_id: str, db: Session) -> List[DiagnosticQuestion]:
@@ -422,71 +423,62 @@ class DiagnosticService:
         rw_str = perception_data.get("real_world_preference", "")
         rw_interest = "high" if ("Yes" in rw_str) else ("low" if ("Not" in rw_str) else "medium")
 
-        # Synthesize Profile via Gemini API if key is present
-        api_key = os.getenv("GEMINI_API_KEY")
+        # Synthesize Profile via LLM API if key is present
         learner_profile = None
         student_explanation = None
 
-        if api_key:
-            try:
-                system_prompt = (
-                    "You are MindForge's adaptive educational intelligence. Analyze the student's diagnostic performance and preference signals "
-                    "for a chapter and output a valid JSON object representing their chapter learner profile and a friendly student explanation."
-                )
-                user_prompt = (
-                    f"Chapter Title: {chapter.title}\n"
-                    f"Prior Knowledge Test Score: {score}/{total_pk} ({percentage}%)\n"
-                    f"Perceived Difficulty: {perceived_diff}\n"
-                    f"Interest Level: {interest_str}\n"
-                    f"Visual Preference: {vis_str}\n"
-                    f"Real-World Preference: {rw_str}\n"
-                    f"Contradiction Flag (Overconfident): {is_overconfident}\n"
-                    f"Contradiction Flag (Underconfident): {is_underconfident}\n\n"
-                    "Return ONLY JSON matching this format:\n"
-                    "{\n"
-                    '  "knowledge_level": "foundational" | "intermediate" | "advanced",\n'
-                    '  "difficulty_level": "low" | "moderate" | "high",\n'
-                    '  "interest_level": "low" | "medium" | "high",\n'
-                    '  "visual_support_need": "low" | "medium" | "high",\n'
-                    '  "real_world_interest": "low" | "medium" | "high",\n'
-                    '  "content_density": "low" | "medium" | "high",\n'
-                    '  "explanation_complexity": "simple" | "moderate" | "detailed",\n'
-                    '  "example_frequency": "high" | "moderate" | "low",\n'
-                    '  "memory_support": "high" | "medium" | "low",\n'
-                    '  "contradiction_flag": true | false,\n'
-                    '  "student_explanation": "Friendly non-technical explanation to show student..."\n'
-                    "}"
-                )
+        try:
+            system_prompt = (
+                "You are MindForge's adaptive educational intelligence. Analyze the student's diagnostic performance and preference signals "
+                "for a chapter and output a valid JSON object representing their chapter learner profile and a friendly student explanation."
+            )
+            user_prompt = (
+                f"Chapter Title: {chapter.title}\n"
+                f"Prior Knowledge Test Score: {score}/{total_pk} ({percentage}%)\n"
+                f"Perceived Difficulty: {perceived_diff}\n"
+                f"Interest Level: {interest_str}\n"
+                f"Visual Preference: {vis_str}\n"
+                f"Real-World Preference: {rw_str}\n"
+                f"Contradiction Flag (Overconfident): {is_overconfident}\n"
+                f"Contradiction Flag (Underconfident): {is_underconfident}\n\n"
+                "Return ONLY JSON matching this format:\n"
+                "{\n"
+                '  "knowledge_level": "foundational" | "intermediate" | "advanced",\n'
+                '  "difficulty_level": "low" | "moderate" | "high",\n'
+                '  "interest_level": "low" | "medium" | "high",\n'
+                '  "visual_support_need": "low" | "medium" | "high",\n'
+                '  "real_world_interest": "low" | "medium" | "high",\n'
+                '  "content_density": "low" | "medium" | "high",\n'
+                '  "explanation_complexity": "simple" | "moderate" | "detailed",\n'
+                '  "example_frequency": "high" | "moderate" | "low",\n'
+                '  "memory_support": "high" | "medium" | "low",\n'
+                '  "contradiction_flag": true | false,\n'
+                '  "student_explanation": "Friendly non-technical explanation to show student..."\n'
+                "}"
+            )
 
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.post(
-                        url,
-                        json={
-                            "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_prompt}"}]}],
-                            "generationConfig": {"temperature": 0.2, "response_mime_type": "application/json"}
-                        }
-                    )
-                    if resp.status_code == 200:
-                        raw_json = resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                        if raw_json:
-                            parsed = json.loads(raw_json)
-                            learner_profile = {
-                                "knowledge_level": parsed.get("knowledge_level", base_knowledge),
-                                "difficulty_level": parsed.get("difficulty_level", "high" if "difficult" in perceived_diff.lower() else "moderate"),
-                                "interest_level": parsed.get("interest_level", interest_level),
-                                "visual_support_need": parsed.get("visual_support_need", visual_need),
-                                "real_world_interest": parsed.get("real_world_interest", rw_interest),
-                                "content_density": parsed.get("content_density", base_density),
-                                "explanation_complexity": parsed.get("explanation_complexity", base_complexity),
-                                "example_frequency": parsed.get("example_frequency", "high" if interest_level == "low" else "moderate"),
-                                "memory_support": parsed.get("memory_support", "high" if base_knowledge == "foundational" else "medium"),
-                                "contradiction_flag": is_overconfident or is_underconfident,
-                                "confidence_score": round(percentage / 100.0, 2)
-                            }
-                            student_explanation = parsed.get("student_explanation")
-            except Exception as e:
-                print(f"[Diagnostic] Gemini AI profiling fallback triggered: {e}")
+            parsed = await llm_service.generate_json(
+                prompt=user_prompt,
+                system_instruction=system_prompt,
+                temperature=0.2
+            )
+            if parsed and isinstance(parsed, dict):
+                learner_profile = {
+                    "knowledge_level": parsed.get("knowledge_level", base_knowledge),
+                    "difficulty_level": parsed.get("difficulty_level", "high" if "difficult" in perceived_diff.lower() else "moderate"),
+                    "interest_level": parsed.get("interest_level", interest_level),
+                    "visual_support_need": parsed.get("visual_support_need", visual_need),
+                    "real_world_interest": parsed.get("real_world_interest", rw_interest),
+                    "content_density": parsed.get("content_density", base_density),
+                    "explanation_complexity": parsed.get("explanation_complexity", base_complexity),
+                    "example_frequency": parsed.get("example_frequency", "high" if interest_level == "low" else "moderate"),
+                    "memory_support": parsed.get("memory_support", "high" if base_knowledge == "foundational" else "medium"),
+                    "contradiction_flag": is_overconfident or is_underconfident,
+                    "confidence_score": round(percentage / 100.0, 2)
+                }
+                student_explanation = parsed.get("student_explanation")
+        except Exception as e:
+            print(f"[Diagnostic] LLM AI profiling fallback triggered: {e}")
 
         # Fallback profile synthesis if Gemini unavailable or failed
         if not learner_profile:

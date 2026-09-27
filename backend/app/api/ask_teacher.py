@@ -84,9 +84,7 @@ def get_teacher_questions(
     db: Session = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher)
 ):
-    query = db.query(AskTeacherQuestion).filter(
-        AskTeacherQuestion.teacher_id == current_teacher.id
-    )
+    query = db.query(AskTeacherQuestion)
     if status_filter and status_filter.upper() != "ALL":
         if status_filter.upper() == "OPEN" or status_filter.upper() == "PENDING":
             query = query.filter(AskTeacherQuestion.status == QuestionStatus.PENDING)
@@ -107,12 +105,12 @@ def answer_question(
     current_teacher: Teacher = Depends(get_current_teacher)
 ):
     question = db.query(AskTeacherQuestion).filter(
-        AskTeacherQuestion.id == id,
-        AskTeacherQuestion.teacher_id == current_teacher.id
+        AskTeacherQuestion.id == id
     ).first()
     if not question:
-        raise HTTPException(status_code=404, detail="Question not found or not assigned to you")
+        raise HTTPException(status_code=404, detail="Question not found")
 
+    question.teacher_id = current_teacher.id
     question.answer = answer_in.answer
     question.status = answer_in.status or QuestionStatus.ANSWERED
     question.answered_at = datetime.now(timezone.utc)
@@ -129,8 +127,7 @@ def update_question_status(
     current_teacher: Teacher = Depends(get_current_teacher)
 ):
     question = db.query(AskTeacherQuestion).filter(
-        AskTeacherQuestion.id == id,
-        AskTeacherQuestion.teacher_id == current_teacher.id
+        AskTeacherQuestion.id == id
     ).first()
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")

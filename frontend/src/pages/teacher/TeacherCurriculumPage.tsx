@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useId } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { documentService, subjectService, chapterService, classService } from '../../api/services';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 import type { DocumentItem, Subject, Chapter, SchoolClass, DocumentStatus } from '../../types';
 import { 
   FileUp, 
@@ -389,8 +390,17 @@ export const TeacherCurriculumPage: React.FC = () => {
 
       {/* PDF Upload Modal */}
       {isUploadOpen && (
-        <div className="fixed inset-0 z-50 bg-stone-950/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-xl w-full border border-stone-200 dark:border-slate-800 shadow-2xl space-y-5">
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-stone-950/40 backdrop-blur-xs flex items-center justify-center p-4"
+          onClose={() => {
+            setIsUploadOpen(false);
+            resetUploadForm();
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-xl w-full border border-stone-200 dark:border-slate-800 shadow-2xl space-y-5"
+          >
             <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <FileUp className="w-5 h-5 text-indigo-600 dark:text-sky-400" />
@@ -534,13 +544,20 @@ export const TeacherCurriculumPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Delete Confirm Modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 bg-stone-950/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-stone-200 dark:border-slate-800 shadow-xl space-y-4">
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-stone-950/40 backdrop-blur-xs flex items-center justify-center p-4"
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDelete}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-stone-200 dark:border-slate-800 shadow-xl space-y-4"
+          >
             <h3 className="text-base font-bold text-stone-900 dark:text-white">Delete Curriculum Material?</h3>
             <p className="text-xs text-stone-600 dark:text-slate-300">
               Are you sure you want to remove <span className="font-bold text-stone-900 dark:text-white">"{deleteTarget.title}"</span>? This will unindex its chunks from student RAG search.
@@ -552,7 +569,7 @@ export const TeacherCurriculumPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

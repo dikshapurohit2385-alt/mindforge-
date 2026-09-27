@@ -16,14 +16,12 @@ import type {
 } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { 
-  BookOpen, 
-  FileText, 
   ArrowRight, 
-  AlertTriangle, 
-  School,
-  ExternalLink,
-  ChevronRight
+  School
 } from 'lucide-react';
+import { EnrolledSubjectsCard } from '../../components/student/dashboard/EnrolledSubjectsCard';
+import { AttendanceViewerCard } from '../../components/student/dashboard/AttendanceViewerCard';
+import { RecentNotesCard } from '../../components/student/dashboard/RecentNotesCard';
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -153,169 +151,34 @@ export const StudentDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Main Grid: My Subjects + Attendance */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            {/* Left 8 Cols: My Subjects */}
-            <div className="lg:col-span-8 space-y-4">
-              <div className="flex items-center justify-between border-b border-stone-200 dark:border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-indigo-600 dark:text-sky-400" />
-                  <h2 className="text-base font-bold text-stone-900 dark:text-white">
-                    My Enrolled Subjects ({subjects.length})
-                  </h2>
-                </div>
-
-                <button
-                  onClick={() => navigate('/student/subjects')}
-                  className="text-xs font-bold text-indigo-700 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <span>View All</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {subjects.map((sub) => {
-                  const chapterCount = sub.chapters?.length || 0;
-                  return (
-                    <div
-                      key={sub.id}
-                      onClick={() => navigate(`/student/subjects/${sub.id}`)}
-                      className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-stone-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-slate-700 transition-all cursor-pointer space-y-3 shadow-2xs group"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-800 dark:text-sky-300 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-900">
-                          {sub.class_name || 'Class Subject'}
-                        </span>
-                        <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-indigo-600 transition-colors" />
-                      </div>
-
-                      <h3 className="text-base font-bold text-stone-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-sky-400 transition-colors">
-                        {sub.name}
-                      </h3>
-
-                      <p className="text-xs text-stone-500 dark:text-slate-400 line-clamp-2 font-medium">
-                        {sub.description || 'Subject curriculum & adaptive textbook modules.'}
-                      </p>
-
-                      <div className="pt-2 border-t border-stone-100 dark:border-slate-800 flex items-center justify-between text-xs text-stone-600 dark:text-slate-400 font-semibold">
-                        <span>{chapterCount} Chapter(s)</span>
-                        <span className="text-indigo-600 dark:text-sky-400 font-bold">Open Subject →</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Main Grid: My Subjects Card + Attendance Viewer Card */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Left 8 Cols: Enrolled Subjects Card */}
+            <div className="lg:col-span-8 flex flex-col">
+              <EnrolledSubjectsCard
+                subjects={subjects}
+                onViewAll={() => navigate('/student/subjects')}
+                onSelectSubject={(id) => navigate(`/student/subjects/${id}`)}
+                className="h-full"
+              />
             </div>
 
-            {/* Right 4 Cols: Attendance Summary */}
-            <div className="lg:col-span-4 space-y-4">
-              <div className="flex items-center justify-between border-b border-stone-200 dark:border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <School className="w-4 h-4 text-indigo-600 dark:text-sky-400" />
-                  <h2 className="text-base font-bold text-stone-900 dark:text-white">
-                    Attendance Overview
-                  </h2>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-stone-200 dark:border-slate-800 space-y-4 shadow-2xs">
-                {attendanceSummary.length === 0 ? (
-                  <p className="text-xs font-medium text-stone-500 dark:text-slate-400">
-                    No attendance logs recorded yet for your class sessions.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {attendanceSummary.map((att) => (
-                      <div key={att.subject_id} className="p-3 rounded-xl bg-stone-50 dark:bg-slate-800/80 border border-stone-200/80 dark:border-slate-700 space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold text-stone-900 dark:text-white">
-                          <span>{att.subject_name}</span>
-                          <span className={`px-2 py-0.5 rounded text-[11px] ${
-                            att.attendance_percentage >= 75
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                              : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                          }`}>
-                            {att.attendance_percentage.toFixed(0)}% Attendance
-                          </span>
-                        </div>
-
-                        {att.needs_catchup && (
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" /> Catch-Up Needed
-                            </span>
-                            <button
-                              onClick={() => navigate(`/student/attendance-catchup/${att.subject_id}`)}
-                              className="text-[11px] font-bold text-indigo-600 dark:text-sky-400 hover:underline cursor-pointer"
-                            >
-                              Catch-Up Path →
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <button
-                  onClick={() => navigate('/student/my-class')}
-                  className="w-full py-2 bg-stone-100 dark:bg-slate-800 hover:bg-stone-200 dark:hover:bg-slate-700 rounded-xl text-xs font-bold text-stone-800 dark:text-stone-200 cursor-pointer transition-colors"
-                >
-                  View Full Class Roster
-                </button>
-              </div>
+            {/* Right 4 Cols: Attendance Viewer Card */}
+            <div className="lg:col-span-4 flex flex-col">
+              <AttendanceViewerCard
+                attendanceSummary={attendanceSummary}
+                onViewRoster={() => navigate('/student/my-class')}
+                onCatchUp={(subjectId) => navigate(`/student/attendance-catchup/${subjectId}`)}
+                className="h-full"
+              />
             </div>
           </div>
 
-          {/* Bottom Row: Recent Activity Notes */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-200 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-indigo-600 dark:text-sky-400" />
-                <h2 className="text-base font-bold text-stone-900 dark:text-white">
-                  Recent Personal Notes
-                </h2>
-              </div>
-
-              <button
-                onClick={() => navigate('/student/notebook')}
-                className="text-xs font-bold text-indigo-700 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>Open Digital Notebook</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {recentNotes.length === 0 ? (
-              <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-stone-200 dark:border-slate-800">
-                <p className="text-xs text-stone-500 font-medium">
-                  No notes saved yet. Write notes while reading adaptive lessons to populate your digital notebook.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {recentNotes.map((note) => (
-                  <div
-                    key={note.id}
-                    onClick={() => navigate('/student/notebook')}
-                    className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800 space-y-2 hover:border-indigo-300 transition-all cursor-pointer shadow-2xs"
-                  >
-                    <div className="flex items-center justify-between text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                      <span>{note.subject_name || 'Note'}</span>
-                      <span>{new Date(note.created_at).toLocaleDateString()}</span>
-                    </div>
-                    <h4 className="text-xs font-bold text-stone-900 dark:text-white line-clamp-1 font-serif">
-                      {note.title}
-                    </h4>
-                    <p className="text-xs text-stone-600 dark:text-slate-400 line-clamp-2 font-medium">
-                      {note.content}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Bottom Row: Recent Personal Notes Card */}
+          <RecentNotesCard
+            recentNotes={recentNotes}
+            onOpenNotebook={() => navigate('/student/notebook')}
+          />
 
         </div>
       )}

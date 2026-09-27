@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 
 export const ChapterModuleManagementPage: React.FC = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
@@ -309,11 +310,15 @@ export const ChapterModuleManagementPage: React.FC = () => {
       {/* Chapter Modal */}
       <AnimatePresence>
         {isChapterModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <ModalOverlay
+            className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4"
+            onClose={() => setIsChapterModalOpen(false)}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
               className="azure-card bg-white dark:bg-slate-900 rounded-2xl p-7 max-w-md w-full border border-sky-200 dark:border-sky-800 shadow-2xl space-y-4"
             >
               <div className="flex items-center justify-between border-b border-sky-100 dark:border-slate-800 pb-3">
@@ -380,18 +385,22 @@ export const ChapterModuleManagementPage: React.FC = () => {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </ModalOverlay>
         )}
       </AnimatePresence>
 
       {/* Module Modal */}
       <AnimatePresence>
         {isModuleModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <ModalOverlay
+            className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4"
+            onClose={() => setIsModuleModalOpen(false)}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
               className="azure-card bg-white dark:bg-slate-900 rounded-2xl p-7 max-w-md w-full border border-sky-200 dark:border-sky-800 shadow-2xl space-y-4"
             >
               <div className="flex items-center justify-between border-b border-sky-100 dark:border-slate-800 pb-3">
@@ -458,7 +467,7 @@ export const ChapterModuleManagementPage: React.FC = () => {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </ModalOverlay>
         )}
       </AnimatePresence>
     </div>

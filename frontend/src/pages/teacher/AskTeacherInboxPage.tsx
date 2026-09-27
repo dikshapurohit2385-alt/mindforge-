@@ -11,6 +11,7 @@ import {
   Edit3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 
 export const AskTeacherInboxPage: React.FC = () => {
   const [questions, setQuestions] = useState<AskTeacherQuestion[]>([]);
@@ -213,11 +214,15 @@ export const AskTeacherInboxPage: React.FC = () => {
       {/* Answer Modal */}
       <AnimatePresence>
         {selectedQuestion && (
-          <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <ModalOverlay
+            className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4"
+            onClose={() => setSelectedQuestion(null)}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
               className="azure-card bg-white dark:bg-slate-900 rounded-2xl p-7 max-w-xl w-full border border-sky-200 dark:border-sky-800 shadow-2xl space-y-4"
             >
               <div className="flex items-center justify-between border-b border-sky-100 dark:border-slate-800 pb-3">
@@ -275,11 +280,12 @@ export const AskTeacherInboxPage: React.FC = () => {
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>{submitting ? 'Submitting...' : 'Submit Official Answer'}</span>
+                    <span className="text-[10px] opacity-75 font-mono ml-0.5 hidden sm:inline">(Ctrl+↵)</span>
                   </button>
                 </div>
               </form>
             </motion.div>
-          </div>
+          </ModalOverlay>
         )}
       </AnimatePresence>
     </div>

@@ -5,6 +5,7 @@ import {
   knowledgeGraphService, 
   subjectService 
 } from '../../api/services';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 import type { 
   Subject, 
   LearningPathData, 
@@ -396,8 +397,15 @@ export const AdaptiveLearningPathPage: React.FC = () => {
 
       {/* Prerequisite Inspection Modal (Phase 4.6) */}
       {inspectPrereq && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="azure-card rounded-3xl p-6 sm:p-7 max-w-lg w-full border border-sky-300 dark:border-sky-800 shadow-2xl space-y-5">
+        <ModalOverlay
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs"
+          onClose={() => setInspectPrereq(null)}
+          onConfirm={() => setInspectPrereq(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="azure-card rounded-3xl p-6 sm:p-7 max-w-lg w-full border border-sky-300 dark:border-sky-800 shadow-2xl space-y-5"
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {inspectPrereq.can_proceed ? (
@@ -450,7 +458,7 @@ export const AdaptiveLearningPathPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

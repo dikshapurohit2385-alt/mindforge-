@@ -138,7 +138,7 @@ def list_documents(
         teacher = db.query(Teacher).filter(Teacher.user_id == current_user.id).first()
         if not teacher:
             raise HTTPException(status_code=404, detail="Teacher profile not found")
-        query = query.filter(Document.uploaded_by == teacher.id)
+        # In school curriculum, teachers can view all curriculum documents
     elif current_user.role == UserRole.STUDENT:
         # Students CAN ONLY see APPROVED documents
         query = query.filter(Document.status == DocumentStatus.APPROVED)

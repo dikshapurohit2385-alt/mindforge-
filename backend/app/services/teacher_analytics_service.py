@@ -14,6 +14,7 @@ from app.models.learning_engine import (
     RevisionItem,
     Flashcard
 )
+from app.services.llm_service import llm_service
 
 class TeacherAnalyticsService:
     def get_overview_metrics(self, teacher_id: str, db: Session) -> Dict[str, Any]:
@@ -233,31 +234,22 @@ class TeacherAnalyticsService:
         item_count: int,
         instructions: Optional[str]
     ) -> Any:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if api_key:
-            try:
-                system_prompt = (
-                    f"You are MindForge's expert Teacher Assistant AI. "
-                    f"Generate high-quality educational material for the topic: {topic}. "
-                    f"Difficulty: {difficulty}. Quantity: {item_count}. Format: {content_type}. "
-                    f"Return structured, clear educational content."
-                )
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-                async with httpx.AsyncClient(timeout=12.0) as client:
-                    resp = await client.post(
-                        url,
-                        json={
-                            "contents": [{"parts": [{"text": f"{system_prompt}\n\nAdditional teacher guidance: {instructions or 'Standard curriculum'}"}]}],
-                            "generationConfig": {"temperature": 0.3}
-                        }
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                        if text and content_type in ["SUMMARY", "LESSON_PLAN", "ASSIGNMENT"]:
-                            return text.strip()
-            except Exception as e:
-                print(f"[TeacherAssistant] Gemini generation error: {e}")
+        try:
+            system_prompt = (
+                f"You are MindForge's expert Teacher Assistant AI. "
+                f"Generate high-quality educational material for the topic: {topic}. "
+                f"Difficulty: {difficulty}. Quantity: {item_count}. Format: {content_type}. "
+                f"Return structured, clear educational content."
+            )
+            text = await llm_service.generate_text(
+                prompt=f"Topic: {topic}\nAdditional teacher guidance: {instructions or 'Standard curriculum'}",
+                system_instruction=system_prompt,
+                temperature=0.3
+            )
+            if text and content_type in ["SUMMARY", "LESSON_PLAN", "ASSIGNMENT"]:
+                return text.strip()
+        except Exception as e:
+            print(f"[TeacherAssistant] LLM generation error: {e}")
 
         # Deterministic generation for Quiz, Flashcards, Summaries
         if content_type.upper() == "QUIZ":

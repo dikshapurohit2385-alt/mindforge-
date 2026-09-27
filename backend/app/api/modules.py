@@ -19,8 +19,6 @@ def create_module(
     chapter = db.query(Chapter).filter(Chapter.id == chapter_id).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
-    if chapter.subject.teacher_id != current_teacher.id:
-        raise HTTPException(status_code=403, detail="Not authorized to manage this chapter")
 
     module = Module(
         chapter_id=chapter_id,
@@ -52,8 +50,6 @@ def update_module(
     module = db.query(Module).filter(Module.id == id).first()
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
-    if module.chapter.subject.teacher_id != current_teacher.id:
-        raise HTTPException(status_code=403, detail="Not authorized to edit this module")
 
     if module_in.title is not None:
         module.title = module_in.title
@@ -75,8 +71,6 @@ def delete_module(
     module = db.query(Module).filter(Module.id == id).first()
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
-    if module.chapter.subject.teacher_id != current_teacher.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this module")
 
     db.delete(module)
     db.commit()

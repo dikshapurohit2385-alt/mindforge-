@@ -43,10 +43,10 @@ def get_current_student(
         )
     student = db.query(Student).filter(Student.user_id == current_user.id).first()
     if not student:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student profile not found"
-        )
+        student = Student(user_id=current_user.id, class_name="Class 9")
+        db.add(student)
+        db.commit()
+        db.refresh(student)
     return student
 
 def get_current_teacher(
@@ -60,8 +60,9 @@ def get_current_teacher(
         )
     teacher = db.query(Teacher).filter(Teacher.user_id == current_user.id).first()
     if not teacher:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Teacher profile not found"
-        )
+        teacher = Teacher(user_id=current_user.id)
+        db.add(teacher)
+        db.commit()
+        db.refresh(teacher)
     return teacher
+

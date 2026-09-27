@@ -17,6 +17,7 @@ from app.schemas.academic import (
     ContextualAIAskOut
 )
 from app.services.rag_service import rag_service
+from app.services.llm_service import llm_service
 
 router = APIRouter(prefix="/study-workspace", tags=["study-workspace"])
 
@@ -166,57 +167,47 @@ async def ask_ai_about_selected_text(
     except Exception:
         rag_ctx = ""
 
-    api_key = os.getenv("GEMINI_API_KEY")
     mode = payload.mode or "explain"
+    prompt_instruction = (
+        "Explain in simple intuitive terms." if mode == "explain" else
+        "Provide a clear real-world example." if mode == "example" else
+        "Break down step-by-step." if mode == "steps" else
+        "Explain why this concept is important." if mode == "importance" else
+        (payload.custom_prompt or "Answer the student's question about this text.")
+    )
 
-    if api_key:
-        prompt_instruction = (
-            "Explain in simple intuitive terms." if mode == "explain" else
-            "Provide a clear real-world example." if mode == "example" else
-            "Break down step-by-step." if mode == "steps" else
-            "Explain why this concept is important." if mode == "importance" else
-            (payload.custom_prompt or "Answer the student's question about this text.")
-        )
+    system_prompt = (
+        "You are MindForge's contextual study AI tutor. Answer questions about selected text accurately using the provided course RAG context."
+    )
+    user_prompt = (
+        f"Subject: {sub_name}\n"
+        f"Selected Text: \"{payload.selected_text}\"\n"
+        f"Student Prompt Mode: {mode} ({prompt_instruction})\n"
+        f"Course RAG Context: {rag_ctx[:600]}\n\n"
+        "Return ONLY JSON matching:\n"
+        "{\n"
+        '  "explanation": "Clear explanation paragraph...",\n'
+        '  "key_points": ["Key point 1", "Key point 2"],\n'
+        '  "real_world_analogy": "Analogy string..."\n'
+        "}"
+    )
 
-        system_prompt = (
-            "You are MindForge's contextual study AI tutor. Answer questions about selected text accurately using the provided course RAG context."
+    try:
+        data = await llm_service.generate_json(
+            prompt=user_prompt,
+            system_instruction=system_prompt,
+            temperature=0.2
         )
-        user_prompt = (
-            f"Subject: {sub_name}\n"
-            f"Selected Text: \"{payload.selected_text}\"\n"
-            f"Student Prompt Mode: {mode} ({prompt_instruction})\n"
-            f"Course RAG Context: {rag_ctx[:600]}\n\n"
-            "Return ONLY JSON matching:\n"
-            "{\n"
-            '  "explanation": "Clear explanation paragraph...",\n'
-            '  "key_points": ["Key point 1", "Key point 2"],\n'
-            '  "real_world_analogy": "Analogy string..."\n'
-            "}"
-        )
-
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.post(
-                    url,
-                    json={
-                        "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_prompt}"}]}],
-                        "generationConfig": {"temperature": 0.2, "response_mime_type": "application/json"}
-                    }
-                )
-                if resp.status_code == 200:
-                    raw_text = resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                    if raw_text:
-                        data = json.loads(raw_text)
-                        return ContextualAIAskOut(
-                            selected_text=payload.selected_text,
-                            mode=mode,
-                            explanation=data.get("explanation", "No detailed explanation available."),
-                            key_points=data.get("key_points", []),
-                            real_world_analogy=data.get("real_world_analogy")
-                        )
-        except Exception as e:
-            print(f"[Study Workspace] Gemini API call failed: {e}")
+        if data and isinstance(data, dict):
+            return ContextualAIAskOut(
+                selected_text=payload.selected_text,
+                mode=mode,
+                explanation=data.get("explanation", "No detailed explanation available."),
+                key_points=data.get("key_points", []),
+                real_world_analogy=data.get("real_world_analogy")
+            )
+    except Exception as e:
+        print(f"[Study Workspace] LLM call failed: {e}")
 
     # Seamless Contextual AI Synthesis Fallback (works with or without live GEMINI_API_KEY)
     clean_snippet = payload.selected_text.strip()

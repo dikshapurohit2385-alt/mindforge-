@@ -18,6 +18,7 @@ from app.models.learning_engine import (
     QuizAttempt
 )
 from app.models.academic import Subject, Chapter, Module
+from app.services.llm_service import llm_service
 
 class AdaptiveLearningService:
     # ---------------- 1. Multi-Level Adaptive Explanations ----------------
@@ -28,43 +29,35 @@ class AdaptiveLearningService:
         format_type: str, # SIMPLE, DETAILED, ANALOGY, CODE, STEP_BY_STEP, QUESTIONS, SUMMARY
         custom_question: Optional[str] = None
     ) -> Dict[str, Any]:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if api_key:
-            try:
-                system_prompt = (
-                    f"You are MindForge's expert adaptive educational AI. "
-                    f"Target Student Level: {level}. "
-                    f"Requested Content Format: {format_type}. "
-                    f"Provide an engaging, mathematically/technically sound explanation strictly tailored to the level."
-                )
-                user_prompt = f"Topic: {topic}\n"
-                if custom_question:
-                    user_prompt += f"Specific Student Question: {custom_question}\n"
+        try:
+            system_prompt = (
+                f"You are MindForge's expert adaptive educational AI. "
+                f"Target Student Level: {level}. "
+                f"Requested Content Format: {format_type}. "
+                f"Provide an engaging, mathematically/technically sound explanation strictly tailored to the level."
+            )
+            user_prompt = f"Topic: {topic}\n"
+            if custom_question:
+                user_prompt += f"Specific Student Question: {custom_question}\n"
 
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.post(
-                        url,
-                        json={
-                            "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_prompt}"}]}],
-                            "generationConfig": {"temperature": 0.4, "maxOutputTokens": 800}
-                        }
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                        if text:
-                            return {
-                                "topic_title": topic,
-                                "level": level,
-                                "format_type": format_type,
-                                "content": text.strip(),
-                                "key_points": [f"Core principle of {topic}", f"Tailored for {level} mastery", f"Format: {format_type.title()}"],
-                                "code_snippet": None,
-                                "practice_prompt": f"Try explaining {topic} in your own words or testing with a code sample."
-                            }
-            except Exception as e:
-                print(f"[Adaptive] Gemini explanation failed: {e}")
+            text = await llm_service.generate_text(
+                prompt=user_prompt,
+                system_instruction=system_prompt,
+                temperature=0.4,
+                max_tokens=800
+            )
+            if text:
+                return {
+                    "topic_title": topic,
+                    "level": level,
+                    "format_type": format_type,
+                    "content": text.strip(),
+                    "key_points": [f"Core principle of {topic}", f"Tailored for {level} mastery", f"Format: {format_type.title()}"],
+                    "code_snippet": None,
+                    "practice_prompt": f"Try explaining {topic} in your own words or testing with a code sample."
+                }
+        except Exception as e:
+            print(f"[Adaptive] LLM explanation failed: {e}")
 
         # Deterministic High-Quality Pedagogical Synthesis
         explanations = {

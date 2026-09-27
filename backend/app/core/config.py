@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./onepath_ai.db")
     
     # AI Integration
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     
     # CORS

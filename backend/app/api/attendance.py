@@ -17,6 +17,7 @@ from app.schemas.academic import (
     CatchUpSection
 )
 from app.services.rag_service import rag_service
+from app.services.llm_service import llm_service
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
@@ -209,12 +210,10 @@ async def generate_attendance_catchup_path(
     except Exception:
         rag_context = ""
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        # Check rule: Do not generate fake AI responses if Gemini is unavailable
+    if not (llm_service.groq_api_key or llm_service.gemini_api_key):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Gemini AI service (GEMINI_API_KEY) is unconfigured or unavailable. Live AI catch-up generation requires active API key."
+            detail="AI service (GROQ_API_KEY / GEMINI_API_KEY) is unconfigured or unavailable. Live AI catch-up generation requires active API key."
         )
 
     system_prompt = (
@@ -243,46 +242,40 @@ async def generate_attendance_catchup_path(
     )
 
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        async with httpx.AsyncClient(timeout=12.0) as client:
-            resp = await client.post(
-                url,
-                json={
-                    "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_prompt}"}]}],
-                    "generationConfig": {"temperature": 0.2, "response_mime_type": "application/json"}
-                }
-            )
-            if resp.status_code == 200:
-                raw_text = resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                if raw_text:
-                    data = json.loads(raw_text)
-                    raw_sections = data.get("sections", [])
-                    sections = [
-                        CatchUpSection(
-                            title=s.get("title", "Catch-up Section"),
-                            section_type=s.get("section_type", "short_explanation"),
-                            content=s.get("content", ""),
-                            bullet_points=s.get("bullet_points", []),
-                            diagram_headers=s.get("diagram_headers"),
-                            diagram_rows=s.get("diagram_rows")
-                        )
-                        for s in raw_sections
-                    ]
+        data = await llm_service.generate_json(
+            prompt=user_prompt,
+            system_instruction=system_prompt,
+            temperature=0.2,
+            max_tokens=2500
+        )
+        if data and isinstance(data, dict):
+            raw_sections = data.get("sections", [])
+            sections = [
+                CatchUpSection(
+                    title=s.get("title", "Catch-up Section"),
+                    section_type=s.get("section_type", "short_explanation"),
+                    content=s.get("content", ""),
+                    bullet_points=s.get("bullet_points", []),
+                    diagram_headers=s.get("diagram_headers"),
+                    diagram_rows=s.get("diagram_rows")
+                )
+                for s in raw_sections
+            ]
 
-                    return CatchUpPathOut(
-                        subject_id=subject_id,
-                        subject_name=subject.name,
-                        attendance_percentage=pct,
-                        quiz_accuracy=quiz_acc,
-                        catchup_tier=catchup_tier,
-                        recommendation_summary=rec_summary,
-                        missed_chapters=ch_titles[:2],
-                        sections=sections
-                    )
+            return CatchUpPathOut(
+                subject_id=subject_id,
+                subject_name=subject.name,
+                attendance_percentage=pct,
+                quiz_accuracy=quiz_acc,
+                catchup_tier=catchup_tier,
+                recommendation_summary=rec_summary,
+                missed_chapters=ch_titles[:2],
+                sections=sections
+            )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to generate catch-up plan via Gemini API: {str(e)}"
+            detail=f"Failed to generate catch-up plan via AI service: {str(e)}"
         )
 
     raise HTTPException(status_code=500, detail="Failed to synthesize catch-up material.")

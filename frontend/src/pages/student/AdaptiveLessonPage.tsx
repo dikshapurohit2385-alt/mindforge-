@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adaptiveContentService, noteService } from '../../api/services';
-import type { ChapterAdaptiveLesson, StudentNote } from '../../types';
+import type { ChapterAdaptiveLesson, StudentNote, TextHighlight } from '../../types';
 import { VisualDiagramRenderer } from '../../components/common/VisualDiagramRenderer';
 import { InteractiveStudyWorkspace } from '../../components/common/InteractiveStudyWorkspace';
 import { 
@@ -176,6 +176,35 @@ export const AdaptiveLessonPage: React.FC = () => {
     );
   }
 
+  const renderHighlightedContent = (content: string, activeHighlights: TextHighlight[]) => {
+    if (!activeHighlights || activeHighlights.length === 0 || !content) return content;
+
+    const matchingHls = activeHighlights.filter(h => h.selected_text && content.toLowerCase().includes(h.selected_text.toLowerCase()));
+    if (matchingHls.length === 0) return content;
+
+    const sortedHls = [...matchingHls].sort((a, b) => b.selected_text.length - a.selected_text.length);
+    const escapedSnippets = sortedHls.map(h => h.selected_text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const pattern = new RegExp(`(${escapedSnippets.join('|')})`, 'gi');
+
+    const parts = content.split(pattern);
+    return parts.map((part, i) => {
+      const matched = sortedHls.find(h => h.selected_text.toLowerCase() === part.toLowerCase());
+      if (matched) {
+        const bgClass =
+          matched.color === 'yellow' ? 'bg-amber-200/90 dark:bg-amber-900/80 text-amber-950 dark:text-amber-100 border-amber-400' :
+          matched.color === 'blue' ? 'bg-sky-200/90 dark:bg-sky-900/80 text-sky-950 dark:text-sky-100 border-sky-400' :
+          'bg-emerald-200/90 dark:bg-emerald-900/80 text-emerald-950 dark:text-emerald-100 border-emerald-400';
+
+        return (
+          <mark key={i} className={`${bgClass} border-b-2 font-semibold px-1 rounded shadow-2xs transition-colors`}>
+            {part}
+          </mark>
+        );
+      }
+      return part;
+    });
+  };
+
   const { learner_profile } = lesson;
 
   return (
@@ -259,44 +288,46 @@ export const AdaptiveLessonPage: React.FC = () => {
         chapterTitle={lesson.chapter_title}
         subjectName={lesson.subject_name}
       >
-        {/* Lesson Sections (Wrapped in lesson-reading-area by InteractiveStudyWorkspace) */}
-        <div className="space-y-6">
-          {lesson.sections.map((sec, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.06 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-stone-200 dark:border-slate-800 shadow-2xs space-y-4"
-            >
-              {/* Section Header */}
-              <div className="flex items-center gap-3 pb-3 border-b border-stone-100 dark:border-slate-800">
-                <div className={`p-2 rounded-xl text-white font-bold ${
-                  sec.section_type === 'concept' ? 'bg-indigo-600' :
-                  sec.section_type === 'in_simple_words' ? 'bg-sky-600' :
-                  sec.section_type === 'real_world_application' ? 'bg-emerald-600' :
-                  sec.section_type === 'remember_tip' ? 'bg-amber-500' : 'bg-purple-600'
-                }`}>
-                  {sec.section_type === 'concept' ? <BookOpen className="w-4 h-4" /> :
-                   sec.section_type === 'in_simple_words' ? <Lightbulb className="w-4 h-4" /> :
-                   sec.section_type === 'real_world_application' ? <Brain className="w-4 h-4" /> :
-                   sec.section_type === 'remember_tip' ? <Sparkles className="w-4 h-4" /> :
-                   <HelpCircle className="w-4 h-4" />}
-                </div>
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-700 dark:text-sky-400 block">
-                    {sec.section_type.replace(/_/g, ' ')}
-                  </span>
-                  <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">
-                    {sec.title}
-                  </h3>
-                </div>
-              </div>
+        {({ highlights }) => (
+          <div>
+            {/* Lesson Sections (Wrapped in lesson-reading-area by InteractiveStudyWorkspace) */}
+            <div className="space-y-6">
+              {lesson.sections.map((sec, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.06 }}
+                  className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-stone-200 dark:border-slate-800 shadow-2xs space-y-4"
+                >
+                  {/* Section Header */}
+                  <div className="flex items-center gap-3 pb-3 border-b border-stone-100 dark:border-slate-800">
+                    <div className={`p-2 rounded-xl text-white font-bold ${
+                      sec.section_type === 'concept' ? 'bg-indigo-600' :
+                      sec.section_type === 'in_simple_words' ? 'bg-sky-600' :
+                      sec.section_type === 'real_world_application' ? 'bg-emerald-600' :
+                      sec.section_type === 'remember_tip' ? 'bg-amber-500' : 'bg-purple-600'
+                    }`}>
+                      {sec.section_type === 'concept' ? <BookOpen className="w-4 h-4" /> :
+                       sec.section_type === 'in_simple_words' ? <Lightbulb className="w-4 h-4" /> :
+                       sec.section_type === 'real_world_application' ? <Brain className="w-4 h-4" /> :
+                       sec.section_type === 'remember_tip' ? <Sparkles className="w-4 h-4" /> :
+                       <HelpCircle className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-700 dark:text-sky-400 block">
+                        {sec.section_type.replace(/_/g, ' ')}
+                      </span>
+                      <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">
+                        {sec.title}
+                      </h3>
+                    </div>
+                  </div>
 
-              {/* Section Main Text Content */}
-              <div className="text-xs sm:text-sm font-medium text-stone-800 dark:text-stone-200 leading-relaxed space-y-3 whitespace-pre-wrap font-sans">
-                {sec.content}
-              </div>
+                  {/* Section Main Text Content */}
+                  <div className="text-xs sm:text-sm font-medium text-stone-800 dark:text-stone-200 leading-relaxed space-y-3 whitespace-pre-wrap font-sans">
+                    {renderHighlightedContent(sec.content, highlights)}
+                  </div>
 
               {/* Bullet Points */}
               {sec.bullet_points && sec.bullet_points.length > 0 && (
@@ -511,6 +542,8 @@ export const AdaptiveLessonPage: React.FC = () => {
             </button>
           </div>
         </div>
+        </div>
+        )}
       </InteractiveStudyWorkspace>
     </div>
   );

@@ -23,6 +23,13 @@ def ensure_schema_up_to_date(bind_engine):
             ("ask_teacher_questions", "chapter_id", "VARCHAR"),
             ("ask_teacher_questions", "module_id", "VARCHAR"),
             ("ask_teacher_questions", "selected_text", "TEXT"),
+            ("diagnostic_questions", "chapter_id", "VARCHAR"),
+            ("diagnostic_questions", "question_type", "VARCHAR DEFAULT 'PRIOR_KNOWLEDGE'"),
+            ("diagnostic_assessments", "chapter_id", "VARCHAR"),
+            ("diagnostic_assessments", "learner_profile", "JSON"),
+            ("diagnostic_assessments", "student_explanation", "TEXT"),
+            ("quizzes", "chapter_id", "VARCHAR"),
+            ("quizzes", "module_id", "VARCHAR"),
         ]
         with bind_engine.begin() as conn:
             for table_name, col_name, col_type in migrations:

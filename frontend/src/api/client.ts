@@ -26,11 +26,20 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Clear token on 401 unauthorized
-      localStorage.removeItem('onepath_token');
-      if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
-        window.location.href = '/login';
+    if (error.response) {
+      if (error.response.status === 401) {
+        // Clear token on 401 unauthorized
+        localStorage.removeItem('onepath_token');
+        if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+          window.location.href = '/login';
+        }
+      } else if (
+        error.response.status === 403 &&
+        typeof error.response.data?.detail === 'string' &&
+        (error.response.data.detail.includes('Teacher privileges required') ||
+         error.response.data.detail.includes('Student privileges required'))
+      ) {
+        window.dispatchEvent(new CustomEvent('onepath_auth_mismatch'));
       }
     }
     return Promise.reject(error);

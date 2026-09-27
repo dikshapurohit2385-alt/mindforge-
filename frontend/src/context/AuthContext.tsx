@@ -40,6 +40,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     fetchCurrentUser();
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'onepath_token') {
+        fetchCurrentUser();
+      }
+    };
+
+    const handleAuthMismatch = () => {
+      fetchCurrentUser();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('onepath_auth_mismatch', handleAuthMismatch);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('onepath_auth_mismatch', handleAuthMismatch);
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<User> => {

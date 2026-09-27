@@ -17,6 +17,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { documentService, subjectService, chapterService, moduleService } from '../../api/services';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 import type { DocumentItem, Subject, Chapter, Module, DocumentStatus } from '../../types';
 
 export const DocumentManagementPage: React.FC = () => {
@@ -520,8 +521,17 @@ export const DocumentManagementPage: React.FC = () => {
 
       {/* Upload Document Modal */}
       {isUploadOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
-          <div className="azure-card rounded-2xl max-w-lg w-full p-6 border border-sky-300 dark:border-sky-800 shadow-2xl relative">
+        <ModalOverlay
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in"
+          onClose={() => {
+            setIsUploadOpen(false);
+            resetUploadForm();
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="azure-card rounded-2xl max-w-lg w-full p-6 border border-sky-300 dark:border-sky-800 shadow-2xl relative"
+          >
             <button
               onClick={() => {
                 setIsUploadOpen(false);
@@ -699,13 +709,20 @@ export const DocumentManagementPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
-          <div className="azure-card rounded-2xl max-w-md w-full p-6 border border-rose-300 dark:border-rose-900 shadow-2xl">
+        <ModalOverlay
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in"
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDelete}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="azure-card rounded-2xl max-w-md w-full p-6 border border-rose-300 dark:border-rose-900 shadow-2xl"
+          >
             <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3 font-bold">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -744,7 +761,7 @@ export const DocumentManagementPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

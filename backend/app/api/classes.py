@@ -78,8 +78,7 @@ def get_class_subjects(
         subjects = db.query(Subject).filter(Subject.class_name == class_id).all()
 
     if not subjects:
-        # Return all subjects as fallback
-        subjects = db.query(Subject).all()
+        return []
 
     out = []
     for s in subjects:

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { quizService, subjectService } from '../../api/services';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 import type { QuizItem, QuizAttemptResult, Subject } from '../../types';
 import { 
   CheckSquare, 
@@ -577,8 +578,14 @@ export const QuizzesPage: React.FC = () => {
 
       {/* 5. Generate AI Quiz Modal */}
       {showGenerateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
-          <div className="azure-card rounded-2xl max-w-lg w-full border border-sky-300 dark:border-sky-800 shadow-2xl overflow-hidden">
+        <ModalOverlay
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
+          onClose={() => setShowGenerateModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="azure-card rounded-2xl max-w-lg w-full border border-sky-300 dark:border-sky-800 shadow-2xl overflow-hidden"
+          >
             <div className="p-4 sm:p-5 border-b border-sky-100 dark:border-sky-900 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-500" />
@@ -688,7 +695,7 @@ export const QuizzesPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

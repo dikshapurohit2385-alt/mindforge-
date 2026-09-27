@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { teacherAnalyticsService } from '../../api/services';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 import type { 
   TeacherAnalyticsOverview, 
   StudentCohortItem, 
@@ -303,8 +304,15 @@ export const TeacherAnalyticsPage: React.FC = () => {
 
       {/* Individual Student Drilldown Modal / Drawer */}
       {selectedStudentId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
-          <div className="azure-card rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col border border-sky-300 dark:border-sky-800 shadow-2xl overflow-hidden">
+        <ModalOverlay
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
+          onClose={handleCloseStudent}
+          onConfirm={handleCloseStudent}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="azure-card rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col border border-sky-300 dark:border-sky-800 shadow-2xl overflow-hidden"
+          >
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-sky-100 dark:border-sky-900 flex items-center justify-between gap-4">
               <div>
@@ -452,7 +460,7 @@ export const TeacherAnalyticsPage: React.FC = () => {
               ) : null}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

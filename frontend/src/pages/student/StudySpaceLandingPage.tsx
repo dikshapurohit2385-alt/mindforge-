@@ -127,7 +127,7 @@ export const StudySpaceLandingPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-700 dark:text-sky-400 block">
-                      CURRICULUM • CLASS 9
+                      CURRICULUM • {subject.class_name?.toUpperCase() || 'ACADEMIC'}
                     </span>
                     <h2 className="text-lg sm:text-xl font-bold font-serif text-stone-900 dark:text-white">
                       {subject.name}

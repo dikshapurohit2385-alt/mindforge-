@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.core.deps import get_db, get_current_user, get_current_teacher
-from app.models.user import User, Teacher, UserRole
+from app.models.user import User, Teacher, Student, UserRole
 from app.models.academic import Subject
 from app.schemas.academic import SubjectCreate, SubjectUpdate, SubjectOut
 
@@ -21,6 +21,8 @@ def format_subject_out(subject: Subject, db: Session) -> SubjectOut:
         description=subject.description,
         teacher_id=subject.teacher_id,
         teacher_name=teacher_name,
+        class_id=subject.class_id,
+        class_name=subject.class_name,
         chapter_count=chapter_cnt,
         chapters=subject.chapters or [],
         created_at=subject.created_at
@@ -35,7 +37,9 @@ def create_subject(
     subject = Subject(
         name=subject_in.name,
         description=subject_in.description,
-        teacher_id=current_teacher.id
+        teacher_id=current_teacher.id,
+        class_id=subject_in.class_id,
+        class_name=subject_in.class_name
     )
     db.add(subject)
     db.commit()
@@ -44,11 +48,22 @@ def create_subject(
 
 @router.get("", response_model=List[SubjectOut])
 def list_subjects(
+    class_id: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # If teacher, return subjects taught by teacher or all subjects
-    subjects = db.query(Subject).all()
+    query = db.query(Subject)
+    # If student, strictly isolate and return only subjects for the student's enrolled class
+    if current_user.role == UserRole.STUDENT:
+        student = db.query(Student).filter(Student.user_id == current_user.id).first()
+        if student and student.class_id:
+            query = query.filter(Subject.class_id == student.class_id)
+        elif student and student.class_name:
+            query = query.filter(Subject.class_name == student.class_name)
+    elif class_id:
+        query = query.filter(Subject.class_id == class_id)
+
+    subjects = query.all()
     return [format_subject_out(s, db) for s in subjects]
 
 @router.get("/{id}", response_model=SubjectOut)
@@ -72,13 +87,15 @@ def update_subject(
     subject = db.query(Subject).filter(Subject.id == id).first()
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
-    if subject.teacher_id != current_teacher.id:
-        raise HTTPException(status_code=403, detail="Not authorized to edit this subject")
     
     if subject_in.name is not None:
         subject.name = subject_in.name
     if subject_in.description is not None:
         subject.description = subject_in.description
+    if subject_in.class_id is not None:
+        subject.class_id = subject_in.class_id
+    if subject_in.class_name is not None:
+        subject.class_name = subject_in.class_name
 
     db.commit()
     db.refresh(subject)
@@ -93,8 +110,6 @@ def delete_subject(
     subject = db.query(Subject).filter(Subject.id == id).first()
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
-    if subject.teacher_id != current_teacher.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this subject")
 
     db.delete(subject)
     db.commit()

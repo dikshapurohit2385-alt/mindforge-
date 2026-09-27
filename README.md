@@ -104,13 +104,23 @@ Frontend will run at `http://localhost:5173`.
 
 ---
 
-### Option 2: Docker Compose
+## Demo Accounts & Pre-Seeded Credentials
 
+The backend automatically seeds demo users and rich curriculum data (Class 6–10 classes, Class 9 Science and Math subjects, chapters, modules, diagnostic tests, quizzes, flashcards, attendance logs, concept masteries, digital notes, and teacher doubts) upon server startup.
+
+You can also seed or re-seed the local database at any time using:
 ```bash
-docker-compose up --build
+cd backend
+python -m app.database.seed_curriculum
 ```
-This boots a PostgreSQL database container and the FastAPI backend.
 
+### Pre-configured Accounts:
+| Role | Name | Email | Password | Portal / Redirect |
+|---|---|---|---|---|
+| **Teacher** | Dr. Sarah Mitchell | `teacher@onepath.ai` | `password123` | `/teacher/dashboard` |
+| **Student** | Alex Chen (Class 9) | `student@onepath.ai` | `password123` | `/student/dashboard` |
+| **Student (Contributor)** | Bhavya Rathore (Class 9) | `bhavyarathore5551@gmail.com` | `123456` | `/student/dashboard` |
+| **Student (Demo)** | Demo Student (Class 9) | `demo@gmail.com` | `password123` | `/student/dashboard` |
 ---
 
 ## Running Backend Tests

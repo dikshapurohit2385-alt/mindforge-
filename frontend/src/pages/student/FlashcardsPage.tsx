@@ -18,6 +18,7 @@ import {
   Tag
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ModalOverlay } from '../../components/common/ModalOverlay';
 
 export const FlashcardsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -452,8 +453,14 @@ export const FlashcardsPage: React.FC = () => {
 
       {/* Generate AI Flashcards Modal */}
       {showGenerateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
-          <div className="azure-card rounded-2xl max-w-lg w-full border border-sky-300 dark:border-sky-800 shadow-2xl overflow-hidden">
+        <ModalOverlay
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
+          onClose={() => setShowGenerateModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="azure-card rounded-2xl max-w-lg w-full border border-sky-300 dark:border-sky-800 shadow-2xl overflow-hidden"
+          >
             <div className="p-4 sm:p-5 border-b border-sky-100 dark:border-sky-900 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-500" />
@@ -542,7 +549,7 @@ export const FlashcardsPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

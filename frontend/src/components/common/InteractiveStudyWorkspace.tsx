@@ -21,6 +21,7 @@ import {
   Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ModalOverlay } from './ModalOverlay';
 
 export interface SectionNavItem {
   id?: string;
@@ -132,7 +133,6 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
   const [comments, setComments] = useState<TextComment[]>([]);
 
   // Active Modals & Panels
-  const [showColorPicker, setShowColorPicker] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [commentInput, setCommentInput] = useState('');
 
@@ -224,7 +224,7 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
       return false;
     };
 
-    if (!isInsideLessonArea(anchorNode) || !isInsideLessonArea(focusNode)) {
+    if (!isInsideLessonArea(anchorNode) && !isInsideLessonArea(focusNode)) {
       return;
     }
 
@@ -245,7 +245,6 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
   const clearSelection = () => {
     setSelectedText('');
     setToolbarPos(null);
-    setShowColorPicker(false);
   };
 
   // 1. Create Highlight
@@ -760,40 +759,49 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
             initial={{ opacity: 0, y: 5, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 5, scale: 0.95 }}
+            onMouseDown={(e) => e.preventDefault()}
             style={{
               position: 'absolute',
               left: `${Math.max(140, Math.min(toolbarPos.x, (containerRef.current?.clientWidth || 800) - 140))}px`,
               top: `${Math.max(10, toolbarPos.y)}px`,
               transform: 'translateX(-50%)'
             }}
-            className="z-40 flex items-center gap-1 p-1.5 rounded-2xl bg-stone-900 text-white border border-stone-700 shadow-2xl backdrop-blur-md text-xs font-bold"
+            className="z-50 flex items-center gap-1.5 p-2 rounded-2xl bg-stone-900/95 text-white border border-stone-700/80 shadow-2xl backdrop-blur-md text-xs font-bold"
           >
-            {/* 1. Highlight */}
-            {!showColorPicker ? (
-              <button
-                onClick={() => setShowColorPicker(true)}
-                className="px-3 py-1.5 rounded-xl hover:bg-stone-800 text-amber-300 flex items-center gap-1.5 cursor-pointer"
-              >
+            {/* 1. Highlight with direct 1-click color choices */}
+            <div className="flex items-center gap-1.5 px-1 bg-stone-800/80 rounded-xl py-1">
+              <span className="text-[11px] text-amber-300 font-bold flex items-center gap-1 pl-1">
                 <Highlighter className="w-3.5 h-3.5" />
-                <span>Highlight</span>
-              </button>
-            ) : (
-              <div className="flex items-center gap-1.5 px-2">
-                <button onClick={() => handleSaveHighlight('yellow')} className="w-5 h-5 rounded-full bg-yellow-400 hover:scale-110 border border-white cursor-pointer" title="Yellow" />
-                <button onClick={() => handleSaveHighlight('blue')} className="w-5 h-5 rounded-full bg-sky-400 hover:scale-110 border border-white cursor-pointer" title="Blue" />
-                <button onClick={() => handleSaveHighlight('green')} className="w-5 h-5 rounded-full bg-emerald-400 hover:scale-110 border border-white cursor-pointer" title="Green" />
+                <span>Highlight:</span>
+              </span>
+              <div className="flex items-center gap-1.5 px-1">
+                <button 
+                  onClick={() => handleSaveHighlight('yellow')} 
+                  className="w-5 h-5 rounded-full bg-yellow-400 hover:scale-125 border-2 border-stone-900 shadow-sm cursor-pointer transition-transform" 
+                  title="Highlight Yellow" 
+                />
+                <button 
+                  onClick={() => handleSaveHighlight('blue')} 
+                  className="w-5 h-5 rounded-full bg-sky-400 hover:scale-125 border-2 border-stone-900 shadow-sm cursor-pointer transition-transform" 
+                  title="Highlight Blue" 
+                />
+                <button 
+                  onClick={() => handleSaveHighlight('green')} 
+                  className="w-5 h-5 rounded-full bg-emerald-400 hover:scale-125 border-2 border-stone-900 shadow-sm cursor-pointer transition-transform" 
+                  title="Highlight Green" 
+                />
               </div>
-            )}
+            </div>
 
             <div className="w-px h-4 bg-stone-700" />
 
             {/* 2. Add Comment */}
             <button
               onClick={() => setShowCommentModal(true)}
-              className="px-3 py-1.5 rounded-xl hover:bg-stone-800 text-sky-300 flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl hover:bg-stone-800 text-sky-300 flex items-center gap-1.5 cursor-pointer transition-colors"
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>Add Comment</span>
+              <span>Comment</span>
             </button>
 
             <div className="w-px h-4 bg-stone-700" />
@@ -801,7 +809,7 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
             {/* 3. Ask AI */}
             <button
               onClick={() => handleExecuteAskAI(`Explain this text: "${selectedText.slice(0, 50)}..."`, 'explain', selectedText)}
-              className="px-3 py-1.5 rounded-xl hover:bg-stone-800 text-indigo-300 flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl hover:bg-stone-800 text-indigo-300 flex items-center gap-1.5 cursor-pointer transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Ask AI</span>
@@ -812,13 +820,13 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
             {/* 4. Ask Teacher */}
             <button
               onClick={handleOpenAskTeacher}
-              className="px-3 py-1.5 rounded-xl hover:bg-stone-800 text-emerald-300 flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl hover:bg-stone-800 text-emerald-300 flex items-center gap-1.5 cursor-pointer transition-colors"
             >
               <UserCheck className="w-3.5 h-3.5" />
-              <span>Ask Teacher</span>
+              <span>Teacher</span>
             </button>
 
-            <button onClick={clearSelection} className="p-1 text-stone-400 hover:text-white rounded-lg">
+            <button onClick={clearSelection} className="p-1 text-stone-400 hover:text-white rounded-lg cursor-pointer ml-0.5">
               <X className="w-3.5 h-3.5" />
             </button>
           </motion.div>
@@ -828,11 +836,16 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
       {/* Add Comment Popover Modal */}
       <AnimatePresence>
         {showCommentModal && (
-          <div className="fixed inset-0 z-50 bg-stone-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <ModalOverlay
+            className="fixed inset-0 z-50 bg-stone-950/40 backdrop-blur-xs flex items-center justify-center p-4"
+            onClose={() => setShowCommentModal(false)}
+            onConfirm={handleSaveComment}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full border border-stone-200 dark:border-slate-800 shadow-xl space-y-4"
             >
               <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-800 pb-3">
@@ -856,22 +869,30 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
               />
 
               <div className="flex justify-end gap-2 pt-1">
-                <button onClick={() => setShowCommentModal(false)} className="px-3 py-1.5 text-xs font-bold text-stone-600">Cancel</button>
-                <button onClick={handleSaveComment} className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold">Save Comment</button>
+                <button onClick={() => setShowCommentModal(false)} className="px-3 py-1.5 text-xs font-bold text-stone-600 cursor-pointer">Cancel</button>
+                <button onClick={handleSaveComment} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer">
+                  <span>Save Comment</span>
+                  <span className="text-[10px] opacity-75 font-mono">(Ctrl+↵)</span>
+                </button>
               </div>
             </motion.div>
-          </div>
+          </ModalOverlay>
         )}
       </AnimatePresence>
 
       {/* Ask Teacher Question Modal */}
       <AnimatePresence>
         {showTeacherModal && (
-          <div className="fixed inset-0 z-50 bg-stone-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <ModalOverlay
+            className="fixed inset-0 z-50 bg-stone-950/40 backdrop-blur-xs flex items-center justify-center p-4"
+            onClose={() => setShowTeacherModal(false)}
+            onConfirm={handleSubmitTeacherQuestion}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-lg w-full border border-stone-200 dark:border-slate-800 shadow-xl space-y-4"
             >
               <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-800 pb-3">
@@ -879,7 +900,7 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
                   <UserCheck className="w-5 h-5 text-emerald-600" />
                   <h3 className="text-sm font-bold text-stone-900 dark:text-white">Ask Teacher Question</h3>
                 </div>
-                <button onClick={() => setShowTeacherModal(false)} className="p-1 text-stone-400 hover:text-stone-700"><X className="w-4 h-4" /></button>
+                <button onClick={() => setShowTeacherModal(false)} className="p-1 text-stone-400 hover:text-stone-700 cursor-pointer"><X className="w-4 h-4" /></button>
               </div>
 
               {teacherSuccess ? (
@@ -903,19 +924,20 @@ export const InteractiveStudyWorkspace: React.FC<InteractiveStudyWorkspaceProps>
                   />
 
                   <div className="flex justify-end gap-2 pt-1">
-                    <button onClick={() => setShowTeacherModal(false)} className="px-3 py-1.5 text-xs font-bold text-stone-600">Cancel</button>
+                    <button onClick={() => setShowTeacherModal(false)} className="px-3 py-1.5 text-xs font-bold text-stone-600 cursor-pointer">Cancel</button>
                     <button
                       onClick={handleSubmitTeacherQuestion}
                       disabled={submittingQuestion || !teacherQuestionInput.trim()}
-                      className="px-4 py-1.5 bg-emerald-700 text-white rounded-xl text-xs font-bold disabled:opacity-50"
+                      className="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
                     >
-                      {submittingQuestion ? 'Submitting...' : 'Submit Question'}
+                      <span>{submittingQuestion ? 'Submitting...' : 'Submit Question'}</span>
+                      <span className="text-[10px] opacity-75 font-mono">(Ctrl+↵)</span>
                     </button>
                   </div>
                 </div>
               )}
             </motion.div>
-          </div>
+          </ModalOverlay>
         )}
       </AnimatePresence>
     </div>
